@@ -258,6 +258,7 @@
     <div id="title-scene" class="scene">
       <h1>ポケットバトル</h1>
       <div class="sub">CHAMPIONS</div>
+      <div id="ver-label" style="margin-top:8px;font-size:11px;color:#6a84c8"></div>
       <div id="title-parade"></div>
       <div class="press">▼ タップして スタート！</div>
       <button id="net-btn" style="position:absolute;bottom:56px;left:50%;transform:translateX(-50%);z-index:5;background:linear-gradient(180deg,#8ad0ff,#3b7aff);color:#fff;border:2px solid #1b4a99;border-radius:12px;font-size:14px;font-weight:bold;padding:8px 20px;cursor:pointer">🌐 ともだちと つうしんたいせん</button>
@@ -432,6 +433,14 @@ const MOVES = {
   gunkshot:{name:"ダストシュート",type:"poison",cat:"phys",power:120,pp:5,acc:80,sec:{status:"psn",chance:30}},
   kowtowcleave:{name:"ドゲザン",type:"dark",cat:"phys",power:85,pp:10,acc:null,contact:true},
   wildcharge:{name:"ワイルドボルト",type:"electric",cat:"phys",power:90,pp:15,acc:100,recoil:true,contact:true},
+  drainpunch:{name:"ドレインパンチ",type:"fighting",cat:"phys",power:75,pp:10,acc:100,contact:true,drain:true},
+  machpunch:{name:"マッハパンチ",type:"fighting",cat:"phys",power:40,pp:30,acc:100,prio:1,contact:true},
+  aquastep:{name:"アクアステップ",type:"water",cat:"phys",power:80,pp:10,acc:100,contact:true,self:{spe:1}},
+  foulplay:{name:"イカサマ",type:"dark",cat:"phys",power:95,pp:15,acc:100,contact:true,usesTargetAtk:true},
+  superpower:{name:"ばかぢから",type:"fighting",cat:"phys",power:120,pp:5,acc:100,contact:true,self:{atk:-1,def:-1}},
+  rocktomb:{name:"がんせきふうじ",type:"rock",cat:"phys",power:60,pp:15,acc:95,target:{spe:-1}},
+  uturn:{name:"とんぼがえり",type:"bug",cat:"phys",power:70,pp:20,acc:100,contact:true},
+  dragondarts:{name:"ドラゴンアロー",type:"dragon",cat:"phys",power:100,pp:10,acc:100},
 
   flamethrower:{name:"かえんほうしゃ",type:"fire",cat:"spec",power:90,pp:15,acc:100,sec:{status:"brn",chance:10}},
   fireblast:{name:"だいもんじ",type:"fire",cat:"spec",power:110,pp:5,acc:85,sec:{status:"brn",chance:10}},
@@ -459,9 +468,20 @@ const MOVES = {
   darkpulse:{name:"あくのはどう",type:"dark",cat:"spec",power:80,pp:15,acc:100,sec:{flinch:20}},
   icebeam:{name:"れいとうビーム",type:"ice",cat:"spec",power:90,pp:10,acc:100,sec:{status:"frz",chance:10}},
   watershuriken:{name:"みずしゅりけん",type:"water",cat:"spec",power:45,pp:20,acc:100,prio:1},
+  scald:{name:"ねっとう",type:"water",cat:"spec",power:80,pp:15,acc:100,sec:{status:"brn",chance:30}},
+  torchsong:{name:"フレアソング",type:"fire",cat:"spec",power:80,pp:10,acc:100,self:{spa:1}},
+  electroweb:{name:"エレキネット",type:"electric",cat:"spec",power:55,pp:15,acc:95,target:{spe:-1}},
 
   swordsdance:{name:"つるぎのまい",type:"normal",cat:"status",pp:20,acc:null,selfBoost:{atk:2}},
   nastyplot:{name:"わるだくみ",type:"dark",cat:"status",pp:20,acc:null,selfBoost:{spa:2}},
+  dragondance:{name:"りゅうのまい",type:"dragon",cat:"status",pp:20,acc:null,selfBoost:{atk:1,spe:1}},
+  quiverdance:{name:"ちょうのまい",type:"bug",cat:"status",pp:20,acc:null,selfBoost:{spa:1,spd:1,spe:1}},
+  calmmind:{name:"めいそう",type:"psychic",cat:"status",pp:20,acc:null,selfBoost:{spa:1,spd:1}},
+  bulkup:{name:"ビルドアップ",type:"fighting",cat:"status",pp:20,acc:null,selfBoost:{atk:1,def:1}},
+  irondefense:{name:"てっぺき",type:"steel",cat:"status",pp:15,acc:null,selfBoost:{def:2}},
+  bellydrum:{name:"はらだいこ",type:"normal",cat:"status",pp:10,acc:null,bellydrum:true},
+  recover:{name:"じこさいせい",type:"normal",cat:"status",pp:5,acc:null,heal:true},
+  slackoff:{name:"なまける",type:"normal",cat:"status",pp:5,acc:null,heal:true},
   stealthrock:{name:"ステルスロック",type:"rock",cat:"status",pp:20,acc:null,hazard:"rocks"},
   yawn:{name:"あくび",type:"normal",cat:"status",pp:10,acc:null,yawn:true},
   roar:{name:"ほえる",type:"normal",cat:"status",pp:20,acc:null,roar:true,prio:-6},
@@ -580,7 +600,7 @@ const SPECIES = {
     defPts:{atk:32,hp:32,spd:2},defItem:"stone:metagrossMega",defNature:"adamant",img:"metagross",
     megas:[{id:"metagrossMega",name:"メガメタグロス",stone:"メタグロスナイト",base:[80,145,150,105,110,110],types:["steel","psychic"],ability:"toughclaws",img:"metagross-mega"}]},
   archaludon:{name:"ブリジュラス",types:["steel","dragon"],base:[90,105,130,125,65,85],abilities:["stamina","sturdy"],
-    pool:["flashcannon","dracometeor","thunderbolt","focusblast","dragonpulse","bodypress"],
+    pool:["flashcannon","dracometeor","thunderbolt","focusblast","dragonpulse","bodypress","irondefense"],
     defPts:{spa:32,hp:32,def:2},defItem:"leftovers",defNature:"modest",img:"archaludon"},
   incineroar:{name:"ガオガエン",types:["fire","dark"],base:[95,115,90,80,90,60],abilities:["intimidate","blaze"],
     pool:["flareblitz","darklariat","crosschop","earthquake","knockoff","flamethrower","willowisp","roar"],
@@ -595,7 +615,7 @@ const SPECIES = {
     pool:["kowtowcleave","ironhead","suckerpunch","stoneedge","nightslash","brickbreak","swordsdance"],
     defPts:{atk:32,hp:32,spd:2},defItem:"leftovers",defNature:"adamant",img:"kingambit"},
   dragonite:{name:"カイリュー",types:["dragon","flying"],base:[91,134,95,100,100,80],abilities:["multiscale","innerfocus"],
-    pool:["outrage","extremespeed","earthquake","ironhead","firepunch","dracometeor","bodyslam","roost","swordsdance"],
+    pool:["outrage","extremespeed","earthquake","ironhead","firepunch","dragondance","bodyslam","roost","swordsdance"],
     defPts:{atk:32,hp:32,spd:2},defItem:"choiceband",defNature:"adamant",img:"dragonite"},
   gengar:{name:"ゲンガー",types:["ghost","poison"],base:[60,65,60,130,75,110],abilities:["cursedbody"],
     pool:["shadowball","sludgebomb","thunderbolt","focusblast","psychic","dazzlinggleam","willowisp","thunderwave","nastyplot","encore"],
@@ -606,7 +626,7 @@ const SPECIES = {
     defPts:{atk:32,spe:32,hp:2},defItem:"stone:lucarioMega",defNature:"jolly",img:"lucario",
     megas:[{id:"lucarioMega",name:"メガルカリオ",stone:"ルカリオナイト",base:[70,145,88,140,70,112],types:["fighting","steel"],ability:"adaptability",img:"lucario-mega"}]},
   tyranitar:{name:"バンギラス",types:["rock","dark"],base:[100,134,110,95,100,61],abilities:["sandstream"],
-    pool:["stoneedge","rockslide","crunch","earthquake","ironhead","icepunch","firepunch","stealthrock","roar"],
+    pool:["stoneedge","rockslide","crunch","earthquake","ironhead","icepunch","dragondance","stealthrock","roar"],
     defPts:{atk:32,hp:32,spd:2},defItem:"stone:tyranitarMega",defNature:"adamant",img:"tyranitar",
     megas:[{id:"tyranitarMega",name:"メガバンギラス",stone:"バンギラスナイト",base:[100,164,150,95,120,71],types:["rock","dark"],ability:"sandstream",img:"tyranitar-mega"}]},
   swampert:{name:"ラグラージ",types:["water","ground"],base:[100,110,90,85,90,60],abilities:["torrent"],
@@ -621,7 +641,7 @@ const SPECIES = {
     defPts:{atk:32,spe:32,hp:2},defItem:"stone:staraptorMega",defNature:"jolly",img:"staraptor",
     megas:[{id:"staraptorMega",name:"メガムクホーク",stone:"ムクホークナイト",base:[85,140,100,60,90,110],types:["normal","flying"],ability:"contrary",img:null}]},
   urshifu:{name:"ウーラオス",types:["fighting","dark"],base:[100,130,100,63,60,97],abilities:["unseenfist"],
-    pool:["wickedblow","closecombat","suckerpunch","ironhead","stoneedge","firepunch"],
+    pool:["wickedblow","closecombat","suckerpunch","ironhead","stoneedge","firepunch","bulkup"],
     defPts:{atk:32,spe:32,hp:2},defItem:"lifeorb",defNature:"jolly",img:"urshifu"},
   basculegion:{name:"イダイトウ",types:["water","ghost"],base:[120,112,65,80,75,78],abilities:["adaptability","swiftswim"],
     pool:["wavecrash","waterfall","aquajet","crunch","shadowball","raindance"],
@@ -956,10 +976,17 @@ fitScreen();
 
 /* ===== セーブ（ボックスの育成内容を保存） ===== */
 const SAVE_KEY = "pocketbattle_builds_v5";
+// よくある型: 積み技があれば「積み技+攻撃3つ」をデフォルトに
+const SETUPS_PHYS = ["dragondance", "swordsdance", "bulkup", "bellydrum"];
+const SETUPS_SPEC = ["quiverdance", "nastyplot", "calmmind"];
 function defaultEntry(key) {
   const sp = SPECIES[key];
+  const attacks = sp.pool.filter((m) => MOVES[m].cat !== "status");
+  const physical = sp.base[1] >= sp.base[3] || sp.abilities.includes("hugepower");
+  const setup = (physical ? SETUPS_PHYS : SETUPS_SPEC).find((m) => sp.pool.includes(m));
+  const moves = setup ? [setup, ...attacks.slice(0, 3)] : attacks.slice(0, 4);
   return { key, pts: Object.assign({hp:0,atk:0,def:0,spa:0,spd:0,spe:0}, sp.defPts),
-    ability: sp.abilities[0], item: sp.defItem || "none", nature: sp.defNature || "serious", moves: sp.pool.filter(m=>MOVES[m].cat!=="status").slice(0,4) };
+    ability: sp.abilities[0], item: sp.defItem || "none", nature: sp.defNature || "serious", moves };
 }
 const TEAMS_KEY = "pocketbattle_teams_v1";
 const game = { builds: {}, teams: { 1: [], 2: [], 3: [] }, activeTeam: 1, team: [], enemyTeam: [], playerPicks: [] };
@@ -1493,8 +1520,10 @@ function effSpe(m) {
   return Math.floor(v);
 }
 function calcDamage(a, d, move, isCrit, side) {
-  // てんねん: 相手のランク変化を無視
-  const atk = effAtkStat(a, move, isCrit, side, d.ability === "unaware");
+  // てんねん: 相手のランク変化を無視 / イカサマ: 相手の攻撃で計算
+  const atk = move.usesTargetAtk
+    ? Math.floor(d.atk * stMul(d.ability === "unaware" ? 0 : d.stages.atk))
+    : effAtkStat(a, move, isCrit, side, d.ability === "unaware");
   const def = effDefStat(d, move, isCrit, a.ability === "unaware");
   let dmg = Math.floor(Math.floor(Math.floor(2 * LEVEL / 5 + 2) * move.power * atk / def) / 50) + 2;
   if (isCrit) dmg = Math.floor(dmg * 1.5);
@@ -1739,13 +1768,22 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
       if (!(await setWeather(move.weather, msgs[move.weather]))) await say("しかし うまく きまらなかった！");
       return null;
     }
-    if (move.roost) {
+    if (move.roost || move.heal) {
       if (attacker.hp >= attacker.maxHp) { await say("しかし HPは まんたんだ！"); return null; }
       attacker.hp = Math.min(attacker.maxHp, attacker.hp + Math.floor(attacker.maxHp / 2));
-      if (attacker.types.includes("flying")) { attacker.types = attacker.types.filter((t) => t !== "flying"); if (!attacker.types.length) attacker.types = ["normal"]; attacker.roosting = true; }
+      if (move.roost && attacker.types.includes("flying")) { attacker.types = attacker.types.filter((t) => t !== "flying"); if (!attacker.types.length) attacker.types = ["normal"]; attacker.roosting = true; }
       setHpBar(attacker, attackerSide);
       sfx.heal();
-      await say(`${attacker.name}は はねを やすめて かいふくした！`);
+      await say(`${attacker.name}は HPを かいふくした！`);
+      return null;
+    }
+    if (move.bellydrum) {
+      if (attacker.hp <= Math.floor(attacker.maxHp / 2) || attacker.stages.atk >= 6) { await say("しかし うまく きまらなかった！"); return null; }
+      attacker.hp -= Math.floor(attacker.maxHp / 2);
+      attacker.stages.atk = 6;
+      setHpBar(attacker, attackerSide);
+      sfx.statup();
+      await say(`${attacker.name}は たいりょくを けずって パワーぜんかい！\nこうげきが さいだいまで あがった！`);
       return null;
     }
     // ここから相手対象 → マジックミラーで反射
@@ -1882,6 +1920,11 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
     setHpBar(attacker, attackerSide);
     await say(`${attacker.name}は はんどうで ダメージを うけた！`);
     if (attacker.hp <= 0) { await faintOut(attacker, attackerSide); return "attacker"; }
+  }
+  if (move.drain && attacker.hp < attacker.maxHp && attacker.hp > 0) {
+    attacker.hp = Math.min(attacker.maxHp, attacker.hp + Math.max(1, Math.floor(dmg / 2)));
+    setHpBar(attacker, attackerSide);
+    await say(`${attacker.name}は たいりょくを すいとった！`, { noWait: true });
   }
   if (attacker.item === "lifeorb") {
     attacker.hp = Math.max(0, attacker.hp - Math.max(1, Math.floor(attacker.maxHp / 10)));
@@ -2152,7 +2195,8 @@ function enemyChooseMove() {
       if (mv.yawn) s = (p.status || p.drowsy) ? 1 : 58;
       if (mv.encore) s = (!p.lastMoveKey || p.encore) ? 1 : 40;
       if (mv.roar) s = 12;
-      if (mv.roost) s = e.hp < e.maxHp * .5 ? 75 : 1;
+      if (mv.bellydrum) s = (e.hp > e.maxHp * .7 && e.stages.atk < 6) ? 68 : 1;
+      if (mv.roost || mv.heal) s = e.hp < e.maxHp * .5 ? 75 : 1;
     } else {
       s = mv.power * (e.types.includes(mv.type) ? 1.5 : 1) * typeMultiplier(mv.type, p);
     }
@@ -2331,9 +2375,11 @@ $("net-btn").addEventListener("click", (e) => {
 $("net-host").addEventListener("click", (e) => { e.stopPropagation(); sfx.pick(); netHost(); });
 $("net-join").addEventListener("click", (e) => { e.stopPropagation(); sfx.pick(); netJoin(); });
 $("net-back").addEventListener("click", (e) => { e.stopPropagation(); sfx.unpick(); netReset(); showScene("team-scene"); });
+const GAME_VER = "v12";
 loadBuilds();
 loadTeams();
 buildTitleParade();
+$("ver-label").textContent = `${GAME_VER}・ポケモン${Object.keys(SPECIES).length}たい`;
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
 </body>
