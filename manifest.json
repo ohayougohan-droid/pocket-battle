@@ -1,0 +1,12 @@
+{
+  "name": "ポケットバトル CHAMPIONS",
+  "short_name": "ポケバトル",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#10142a",
+  "theme_color": "#16204a",
+  "icons": [
+    { "src": "sprites/garchomp.gif", "sizes": "96x96", "type": "image/gif" }
+  ]
+}

@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#16204a">
+<link rel="manifest" href="manifest.json">
+<title>ポケットバトル CHAMPIONS</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    background: #10142a;
+    display: flex; align-items: flex-start; justify-content: center;
+    font-family: "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden; touch-action: manipulation;
+  }
+  #frame { transform-origin: top center; }
+  #screen {
+    width: 412px; height: 860px;
+    position: relative; overflow: hidden;
+    background: linear-gradient(180deg, #16204a, #232c58);
+    cursor: pointer;
+  }
+  .scene { position: absolute; inset: 0; }
+  .hidden { display: none !important; }
+  img.pkmn { image-rendering: pixelated; pointer-events: none; }
+  button { font-family: inherit; touch-action: manipulation; }
+
+  #mute-btn {
+    position: absolute; top: 10px; right: 10px; z-index: 50;
+    width: 38px; height: 38px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.5);
+    background: rgba(0,0,0,.45); color: #fff; font-size: 17px; cursor: pointer;
+  }
+
+  /* ===== タイトル ===== */
+  #title-scene { background: linear-gradient(180deg, #0b1026 0%, #1b2a5e 55%, #2e4a9e 100%); text-align: center; color: #fff; }
+  #title-scene h1 {
+    margin-top: 180px; font-size: 44px; letter-spacing: 4px; font-weight: 900;
+    background: linear-gradient(180deg, #ffe97d 20%, #ffb02e 55%, #ff7a00);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 4px 0 #7a3b00) drop-shadow(0 6px 12px rgba(0,0,0,.6));
+  }
+  #title-scene .sub { font-size: 18px; letter-spacing: 8px; color: #9fc0ff; margin-top: 6px; font-weight: bold; }
+  #title-parade { position: absolute; bottom: 220px; left: 0; right: 0; display: flex; justify-content: center; gap: 4px; align-items: flex-end; flex-wrap: wrap; padding: 0 10px; }
+  #title-parade img { image-rendering: pixelated; max-height: 60px; }
+  #title-scene .press { position: absolute; bottom: 120px; left: 0; right: 0; font-size: 19px; font-weight: bold; animation: blink 1.2s steps(1) infinite; text-shadow: 0 2px 6px #000; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ===== 共通 ===== */
+  .panel-scene { color: #fff; padding: 10px 10px 0; display: flex; flex-direction: column; }
+  .top-tabs { display: flex; gap: 6px; margin-bottom: 8px; padding-top: 4px; }
+  .tab-btn {
+    flex: 1; padding: 10px 0; font-size: 15px; font-weight: bold;
+    background: rgba(255,255,255,.08); color: #9fc0ff;
+    border: 2px solid #4a5aa0; border-radius: 10px; cursor: pointer;
+  }
+  .tab-btn.on { background: linear-gradient(180deg, #ffe97d, #ffb02e); color: #5a3200; border-color: #b8860b; }
+  .scene-note { text-align: center; font-size: 12px; color: #ffd95e; margin-bottom: 6px; font-weight: bold; }
+  .primary-btn {
+    background: linear-gradient(180deg, #ffe97d, #ffb02e); color: #5a3200;
+    border: 2px solid #b8860b; border-radius: 12px;
+    font-size: 16px; font-weight: bold; padding: 12px 24px; cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0,0,0,.4);
+  }
+  .primary-btn:disabled { filter: grayscale(1) brightness(.7); }
+  .type-badge { display: inline-block; font-size: 9px; color: #fff; border-radius: 7px; padding: 0 5px; margin: 1px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+
+  .roster-grid {
+    flex: 1; overflow-y: auto;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 7px; align-content: start; padding-bottom: 10px;
+  }
+  .card {
+    position: relative;
+    background: linear-gradient(180deg, #38427a, #262e5c);
+    border: 2px solid #5666a8; border-radius: 10px;
+    padding: 5px 2px; text-align: center; cursor: pointer;
+  }
+  .card.picked { border-color: #6fe06f; background: linear-gradient(180deg, #2f5a3f, #1e3f2c); }
+  .card .imgwrap { height: 58px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+  .card img { image-rendering: pixelated; max-height: 58px; }
+  .card .nm { font-size: 10px; font-weight: bold; margin-top: 2px; white-space: nowrap; }
+  .card .it { font-size: 8px; color: #9fc0ff; white-space: nowrap; overflow: hidden; }
+  .card .pick-num {
+    position: absolute; top: -6px; left: -6px; width: 20px; height: 20px; border-radius: 50%;
+    background: #6fe06f; color: #0a3a0a; font-size: 12px; font-weight: bold; line-height: 18px; border: 2px solid #fff; z-index: 2;
+  }
+  #team-bottom { padding: 8px 0 12px; }
+  #team-slots { display: flex; gap: 4px; justify-content: center; margin-bottom: 8px; }
+  .slot { width: 60px; height: 62px; background: rgba(255,255,255,.06); border: 1px dashed #5666a8; border-radius: 8px; text-align: center; font-size: 8px; overflow: hidden; }
+  .slot img { max-height: 40px; image-rendering: pixelated; }
+  #team-actions { display: flex; gap: 8px; justify-content: center; }
+  #item-warn { text-align: center; color: #ff9a9a; font-size: 11px; font-weight: bold; min-height: 16px; margin-bottom: 4px; }
+
+  /* ===== カスタム画面（フルページ） ===== */
+  #custom-scene { color: #fff; display: flex; flex-direction: column; }
+  #custom-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 12px 8px; background: rgba(0,0,0,.3);
+  }
+  #custom-head img { max-height: 56px; image-rendering: pixelated; }
+  #custom-head .t { font-size: 17px; font-weight: bold; }
+  #custom-head .r { font-size: 11px; color: #ffd95e; font-weight: bold; }
+  #custom-back {
+    margin-left: auto;
+    background: linear-gradient(180deg, #ffe97d, #ffb02e); color: #5a3200;
+    border: 2px solid #b8860b; border-radius: 10px;
+    font-size: 14px; font-weight: bold; padding: 8px 16px; cursor: pointer;
+  }
+  #custom-body { flex: 1; overflow-y: auto; padding: 6px 12px 30px; }
+  .sec-title { font-size: 13px; color: #9fc0ff; font-weight: bold; margin: 12px 0 5px; border-bottom: 1px solid #4a5aa0; padding-bottom: 3px; }
+  .opt-row { display: block; font-size: 13px; margin: 4px 0; background: rgba(255,255,255,.06); border: 2px solid #4a5aa0; border-radius: 8px; padding: 7px 10px; cursor: pointer; }
+  .opt-row.sel { border-color: #6fe06f; background: rgba(111,224,111,.15); }
+  .opt-row .od { color: #9aa8d8; font-size: 10px; }
+  .opt-row.dim { opacity: .4; }
+  #mv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .mv-opt {
+    font-size: 12px; font-weight: bold; color: #fff;
+    border: 2px solid rgba(255,255,255,.25); border-radius: 8px;
+    padding: 7px 8px; cursor: pointer; text-shadow: 0 1px 2px rgba(0,0,0,.6); opacity: .45;
+  }
+  .mv-opt.sel { opacity: 1; border-color: #fff; }
+  select.nat-sel { width: 100%; background: #1d2445; color: #fff; border: 2px solid #4a5aa0; border-radius: 8px; font-size: 14px; padding: 8px; font-family: inherit; }
+  .ev-row { display: flex; align-items: center; gap: 7px; margin: 7px 0; font-size: 13px; }
+  .ev-row .lbl { width: 60px; font-weight: bold; }
+  .ev-row input[type=range] { flex: 1; height: 26px; }
+  .ev-row .pts { width: 26px; text-align: right; font-weight: bold; color: #9fe0ff; }
+  .ev-row .real { width: 54px; text-align: right; color: #ffd95e; font-weight: bold; }
+  #ev-presets { display: flex; gap: 5px; margin: 8px 0; flex-wrap: wrap; }
+  #ev-presets button { font-size: 11px; padding: 6px 10px; background: #4a5aa0; color: #fff; border: 1px solid #8a97c8; border-radius: 8px; cursor: pointer; }
+
+  /* ===== みせあい ===== */
+  .preview-row { background: rgba(0,0,0,.3); border: 1px solid #5666a8; border-radius: 10px; padding: 6px; margin-bottom: 8px; }
+  .preview-row .rt { font-size: 12px; font-weight: bold; color: #9fc0ff; margin-bottom: 4px; }
+  .preview-mons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .pv-card { position: relative; background: linear-gradient(180deg, #38427a, #262e5c); border: 2px solid #5666a8; border-radius: 8px; text-align: center; padding: 4px 2px; font-size: 10px; }
+  .pv-card img { max-height: 50px; image-rendering: pixelated; }
+  .pv-card .nm { font-weight: bold; font-size: 10px; white-space: nowrap; }
+  .pv-card .it { font-size: 8px; color: #9fc0ff; }
+  .pv-card.selectable { cursor: pointer; }
+  .pv-card.chosen { border-color: #6fe06f; background: linear-gradient(180deg, #2f5a3f, #1e3f2c); }
+  .pv-card .pick-num { position: absolute; top: -7px; left: -7px; width: 20px; height: 20px; border-radius: 50%; background: #6fe06f; color: #0a3a0a; font-size: 12px; font-weight: bold; line-height: 18px; border: 2px solid #fff; }
+  #preview-start-wrap { text-align: center; padding: 6px 0 14px; }
+
+  /* ===== バトル（縦） ===== */
+  #battle-scene { background: linear-gradient(180deg, #8ec8f0 0%, #b8e0f8 40%, #7fbf6a 40%, #5ea34e 75%, #4d8a40 100%); }
+  #battle-scene.w-sun  { background: linear-gradient(180deg, #ffd98a 0%, #ffe9b8 40%, #a8c86a 40%, #7ea34e 75%, #6d8a40 100%); }
+  #battle-scene.w-sand { background: linear-gradient(180deg, #d8c08a 0%, #e8d8a8 40%, #b8a86a 40%, #9a8a4e 75%, #857440 100%); }
+  #battle-scene.w-rain { background: linear-gradient(180deg, #4a5a7a 0%, #6a7a9a 40%, #5a8a5a 40%, #3e6e42 75%, #335c38 100%); }
+  #weather-ind { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: bold; color: #fff; background: rgba(0,0,0,.45); border-radius: 10px; padding: 3px 12px; z-index: 5; }
+  .platform { position: absolute; background: radial-gradient(ellipse at center, rgba(0,0,0,.28), rgba(0,0,0,.1) 60%, transparent 72%); border-radius: 50%; }
+  #enemy-platform  { width: 200px; height: 52px; right: 18px; top: 240px; }
+  #player-platform { width: 220px; height: 58px; left: 12px; top: 470px; }
+  .spritewrap { position: absolute; display: flex; justify-content: center; align-items: flex-end; }
+  #enemy-wrap  { right: 18px; top: 110px; width: 200px; height: 155px; }
+  #player-wrap { left: 12px; top: 320px; width: 220px; height: 175px; }
+  #enemy-wrap img  { transform: scale(1.55); transform-origin: bottom center; }
+  #player-wrap img { transform: scale(1.9); transform-origin: bottom center; }
+  .mega-aura img { filter: drop-shadow(0 0 10px #b48aff) drop-shadow(0 0 18px #7a3bff) saturate(1.25); }
+  .enter-enemy  { animation: enterR .5s ease-out; }
+  .enter-player { animation: enterL .5s ease-out; }
+  @keyframes enterR { from { transform: translateX(260px); opacity: 0; } }
+  @keyframes enterL { from { transform: translateX(-260px); opacity: 0; } }
+  .shake { animation: shake .35s; }
+  @keyframes shake { 25% { transform: translate(-8px,2px); } 50% { transform: translate(8px,-2px); } 75% { transform: translate(-5px,0); } }
+  .flashing { animation: flash .38s steps(2) 2; }
+  @keyframes flash { 50% { opacity: 0; } }
+  .mega-flash { animation: megaflash 1s; }
+  @keyframes megaflash { 30%,60% { filter: brightness(4) saturate(0); } }
+  .faint { transition: transform .7s ease-in, opacity .7s; transform: translateY(110px) !important; opacity: 0; }
+
+  .info-box {
+    position: absolute; width: 235px;
+    background: linear-gradient(180deg, #fdfdf6, #e8e8da);
+    border: 3px solid #3c3c34; border-radius: 10px;
+    padding: 7px 11px; color: #22221c; z-index: 2;
+    box-shadow: 0 4px 10px rgba(0,0,0,.35);
+  }
+  #enemy-info  { left: 10px; top: 48px; }
+  #player-info { right: 10px; top: 500px; }
+  .name-line { display: flex; justify-content: space-between; align-items: baseline; font-weight: bold; font-size: 14px; }
+  .name-line .lv { font-size: 11px; color: #555; }
+  .hp-row { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
+  .hp-tag { font-size: 9px; font-weight: bold; color: #fff; background: #3c3c34; border-radius: 6px; padding: 1px 5px; }
+  .hp-bar-outer { flex: 1; height: 9px; background: #55554a; border-radius: 5px; overflow: hidden; }
+  .hp-bar-inner { height: 100%; background: linear-gradient(180deg, #6cdc4e, #3fb82a); transition: width .5s ease-out; border-radius: 5px; }
+  .hp-bar-inner.mid { background: linear-gradient(180deg, #f5d442, #e0b32a); }
+  .hp-bar-inner.low { background: linear-gradient(180deg, #f06848, #d43a2a); animation: hpblink .7s steps(1) infinite; }
+  @keyframes hpblink { 50% { opacity: .45; } }
+  .sub-line { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
+  .hp-num { font-size: 11px; font-weight: bold; color: #444; }
+  .balls { font-size: 10px; letter-spacing: 2px; }
+  .balls .alive { color: #d43a2a; } .balls .dead { color: #999; }
+  .st-badge { font-size: 9px; font-weight: bold; color: #fff; border-radius: 5px; padding: 0 5px; margin-left: 4px; }
+
+  #msg-box {
+    position: absolute; left: 8px; right: 8px; bottom: 8px; height: 210px;
+    background: linear-gradient(180deg, #2c3350, #1d2238);
+    border: 3px solid #8a97c8; border-radius: 12px;
+    padding: 12px 14px; font-size: 17px; line-height: 1.6;
+    color: #fff; white-space: pre-wrap; z-index: 3;
+  }
+  #msg-arrow { position: absolute; right: 14px; bottom: 8px; font-size: 16px; color: #ffd95e; animation: blink .8s steps(1) infinite; }
+
+  #cmd-menu {
+    position: absolute; left: 8px; right: 8px; bottom: 8px; height: 210px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px;
+    background: linear-gradient(180deg, #fdfdf6, #e4e4d4);
+    border: 3px solid #3c3c34; border-radius: 12px; z-index: 4;
+  }
+  .cmd-btn { border: 2px solid #55554a; border-radius: 10px; background: linear-gradient(180deg, #fff, #dedecd); font-size: 18px; font-weight: bold; color: #33332a; cursor: pointer; }
+  #move-menu {
+    position: absolute; left: 8px; right: 8px; bottom: 8px; height: 210px;
+    display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; padding: 10px;
+    background: linear-gradient(180deg, #2c3350, #1d2238);
+    border: 3px solid #8a97c8; border-radius: 12px; z-index: 4;
+  }
+  .move-btn {
+    border: none; border-radius: 10px; padding: 4px 10px;
+    text-align: left; color: #fff; cursor: pointer;
+    text-shadow: 0 1px 3px rgba(0,0,0,.6); box-shadow: inset 0 -3px 0 rgba(0,0,0,.25);
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .move-btn:disabled { filter: grayscale(1) brightness(.6); }
+  .move-btn .mv-name { font-size: 14px; font-weight: bold; }
+  .move-btn .mv-sub { font-size: 10px; opacity: .95; }
+  .corner-back { position: absolute; right: 16px; top: -16px; background: #ffd95e; color: #333; border: 2px solid #b8860b; border-radius: 10px; font-size: 12px; font-weight: bold; padding: 4px 14px; cursor: pointer; z-index: 5; }
+  #mega-toggle {
+    position: absolute; left: 16px; top: -18px;
+    background: linear-gradient(180deg, #b48aff, #7a3bff); color: #fff;
+    border: 2px solid #4a1b99; border-radius: 12px;
+    font-size: 13px; font-weight: bold; padding: 5px 14px; cursor: pointer; z-index: 5;
+    box-shadow: 0 0 10px rgba(150,80,255,.8);
+  }
+
+  #party-modal { position: absolute; inset: 0; background: rgba(0,0,0,.6); z-index: 20; display: flex; align-items: center; justify-content: center; }
+  #party-panel { width: 380px; background: linear-gradient(180deg, #2c3560, #1d2445); border: 2px solid #8a97c8; border-radius: 14px; padding: 14px; color: #fff; }
+  #party-panel h3 { font-size: 15px; color: #ffd95e; margin-bottom: 8px; text-align: center; }
+  .party-row { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.07); border: 2px solid #5666a8; border-radius: 10px; padding: 6px 10px; margin: 6px 0; cursor: pointer; }
+  .party-row.disabled { opacity: .45; }
+  .party-row img { max-height: 38px; image-rendering: pixelated; }
+  .party-row .pr-nm { font-size: 12px; font-weight: bold; width: 100px; }
+  .party-row .pr-hp { flex: 1; }
+  .party-row .pr-num { font-size: 11px; width: 66px; text-align: right; color: #cdd6ff; }
+  #party-cancel { display: block; margin: 8px auto 0; }
+</style>
+</head>
+<body>
+<div id="frame">
+  <div id="screen">
+    <button id="mute-btn">♪</button>
+
+    <div id="title-scene" class="scene">
+      <h1>ポケットバトル</h1>
+      <div class="sub">CHAMPIONS</div>
+      <div id="title-parade"></div>
+      <div class="press">▼ タップして スタート！</div>
+    </div>
+
+    <!-- ボックス（カスタマイズ） -->
+    <div id="box-scene" class="scene panel-scene hidden">
+      <div class="top-tabs">
+        <button class="tab-btn on" data-go="box">ボックス</button>
+        <button class="tab-btn" data-go="team">チームへんせい</button>
+      </div>
+      <div class="scene-note">タップして そだてる（せいかく・とくせい・もちもの・わざ・ポイント）</div>
+      <div id="box-grid" class="roster-grid"></div>
+    </div>
+
+    <!-- チーム編成（選出前） -->
+    <div id="team-scene" class="scene panel-scene hidden">
+      <div class="top-tabs">
+        <button class="tab-btn" data-go="box">ボックス</button>
+        <button class="tab-btn on" data-go="team">チームへんせい</button>
+      </div>
+      <div class="scene-note">バトルにつれていく 6たいを えらぼう！</div>
+      <div id="team-grid" class="roster-grid"></div>
+      <div id="team-bottom">
+        <div id="item-warn"></div>
+        <div id="team-slots"></div>
+        <div id="team-actions">
+          <button id="team-go" class="primary-btn" disabled>みせあいへ ▶</button>
+          <button id="team-random" class="primary-btn" style="font-size:13px;padding:12px 14px">おまかせ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- カスタム（フルページ） -->
+    <div id="custom-scene" class="scene hidden">
+      <div id="custom-head">
+        <img id="custom-img" src="" alt="">
+        <div>
+          <div class="t" id="custom-name">？？？</div>
+          <div class="r" id="custom-remain"></div>
+        </div>
+        <button id="custom-back">✓ OK</button>
+      </div>
+      <div id="custom-body"></div>
+    </div>
+
+    <!-- みせあい -->
+    <div id="preview-scene" class="scene panel-scene hidden">
+      <div class="scene-note" style="margin-top:40px">みせあい！ あいてのチームを みて 3たい えらぼう</div>
+      <div class="preview-row"><div class="rt">あいての チーム</div><div class="preview-mons" id="enemy-preview"></div></div>
+      <div class="preview-row"><div class="rt">きみの チーム（1ばんめが せんとう）</div><div class="preview-mons" id="player-preview"></div></div>
+      <div id="preview-start-wrap"><button id="preview-start" class="primary-btn" disabled>バトルスタート！</button></div>
+    </div>
+
+    <!-- バトル -->
+    <div id="battle-scene" class="scene hidden">
+      <div id="weather-ind" class="hidden"></div>
+      <div id="enemy-platform" class="platform"></div>
+      <div id="player-platform" class="platform"></div>
+      <div id="enemy-wrap" class="spritewrap"><img id="enemy-img" class="pkmn" alt=""></div>
+      <div id="player-wrap" class="spritewrap"><img id="player-img" class="pkmn" alt=""></div>
+      <div id="enemy-info" class="info-box">
+        <div class="name-line"><span><span id="enemy-name">???</span><span id="enemy-status"></span></span><span class="lv">Lv.50</span></div>
+        <div class="hp-row"><span class="hp-tag">HP</span><div class="hp-bar-outer"><div id="enemy-hp" class="hp-bar-inner" style="width:100%"></div></div></div>
+        <div class="sub-line"><span class="balls" id="enemy-balls"></span><span class="hp-num" id="enemy-hp-num"></span></div>
+      </div>
+      <div id="player-info" class="info-box">
+        <div class="name-line"><span><span id="player-name">???</span><span id="player-status"></span></span><span class="lv">Lv.50</span></div>
+        <div class="hp-row"><span class="hp-tag">HP</span><div class="hp-bar-outer"><div id="player-hp" class="hp-bar-inner" style="width:100%"></div></div></div>
+        <div class="sub-line"><span class="balls" id="player-balls"></span><span class="hp-num" id="player-hp-num"></span></div>
+      </div>
+      <div id="msg-box"><span id="msg-text"></span><span id="msg-arrow" class="hidden">▼</span></div>
+      <div id="cmd-menu" class="hidden"></div>
+      <div id="move-menu" class="hidden"></div>
+    </div>
+
+    <div id="party-modal" class="hidden"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ===== タイプ ===== */
+const TYPE_INFO = {
+  normal:{jp:"ノーマル",color:"#A8A878"}, fire:{jp:"ほのお",color:"#F08030"}, water:{jp:"みず",color:"#6890F0"},
+  electric:{jp:"でんき",color:"#E8B800"}, grass:{jp:"くさ",color:"#78C850"}, ice:{jp:"こおり",color:"#70C8C8"},
+  fighting:{jp:"かくとう",color:"#C03028"}, poison:{jp:"どく",color:"#A040A0"}, ground:{jp:"じめん",color:"#D8B858"},
+  flying:{jp:"ひこう",color:"#A890F0"}, psychic:{jp:"エスパー",color:"#F85888"}, bug:{jp:"むし",color:"#A8B820"},
+  rock:{jp:"いわ",color:"#B8A038"}, ghost:{jp:"ゴースト",color:"#705898"}, dragon:{jp:"ドラゴン",color:"#7038F8"},
+  dark:{jp:"あく",color:"#705848"}, steel:{jp:"はがね",color:"#9098A8"}, fairy:{jp:"フェアリー",color:"#EE7FA8"},
+};
+const TYPE_CHART = {
+  normal:{rock:.5,ghost:0,steel:.5},
+  fire:{fire:.5,water:.5,grass:2,ice:2,bug:2,rock:.5,dragon:.5,steel:2},
+  water:{fire:2,water:.5,grass:.5,ground:2,rock:2,dragon:.5},
+  electric:{water:2,electric:.5,grass:.5,ground:0,flying:2,dragon:.5},
+  grass:{fire:.5,water:2,grass:.5,poison:.5,ground:2,flying:.5,bug:.5,rock:2,dragon:.5,steel:.5},
+  ice:{fire:.5,water:.5,grass:2,ice:.5,ground:2,flying:2,dragon:2,steel:.5},
+  fighting:{normal:2,ice:2,poison:.5,flying:.5,psychic:.5,bug:.5,rock:2,ghost:0,dark:2,steel:2,fairy:.5},
+  poison:{grass:2,poison:.5,ground:.5,rock:.5,ghost:.5,steel:0,fairy:2},
+  ground:{fire:2,electric:2,grass:.5,poison:2,flying:0,bug:.5,rock:2,steel:2},
+  flying:{electric:.5,grass:2,fighting:2,bug:2,rock:.5,steel:.5},
+  psychic:{fighting:2,poison:2,psychic:.5,dark:0,steel:.5},
+  bug:{fire:.5,grass:2,fighting:.5,poison:.5,flying:.5,psychic:2,ghost:.5,dark:2,steel:.5,fairy:.5},
+  rock:{fire:2,ice:2,fighting:.5,ground:.5,flying:2,bug:2,steel:.5},
+  ghost:{normal:0,psychic:2,ghost:2,dark:.5},
+  dragon:{dragon:2,steel:.5,fairy:0},
+  dark:{fighting:.5,psychic:2,ghost:2,dark:.5,fairy:.5},
+  steel:{fire:.5,water:.5,electric:.5,ice:2,rock:2,steel:.5,fairy:2},
+  fairy:{fire:.5,fighting:2,poison:.5,dragon:2,dark:2,steel:.5},
+};
+
+/* ===== わざ =====
+   sec: {status,chance} / {flinch:chance} / self / target / weather */
+const MOVES = {
+  earthquake:{name:"じしん",type:"ground",cat:"phys",power:100,pp:10,acc:100},
+  dragonclaw:{name:"ドラゴンクロー",type:"dragon",cat:"phys",power:80,pp:15,acc:100,contact:true},
+  outrage:{name:"げきりん",type:"dragon",cat:"phys",power:120,pp:10,acc:100,contact:true},
+  stoneedge:{name:"ストーンエッジ",type:"rock",cat:"phys",power:100,pp:5,acc:80,highCrit:true},
+  rockslide:{name:"いわなだれ",type:"rock",cat:"phys",power:75,pp:10,acc:90,sec:{flinch:30}},
+  firefang:{name:"ほのおのキバ",type:"fire",cat:"phys",power:65,pp:15,acc:95,contact:true,sec:{status:"brn",chance:10}},
+  crunch:{name:"かみくだく",type:"dark",cat:"phys",power:80,pp:15,acc:100,contact:true},
+  ironhead:{name:"アイアンヘッド",type:"steel",cat:"phys",power:80,pp:15,acc:100,contact:true,sec:{flinch:30}},
+  playrough:{name:"じゃれつく",type:"fairy",cat:"phys",power:90,pp:10,acc:90,contact:true},
+  shadowclaw:{name:"シャドークロー",type:"ghost",cat:"phys",power:70,pp:15,acc:100,highCrit:true,contact:true},
+  shadowsneak:{name:"かげうち",type:"ghost",cat:"phys",power:40,pp:30,acc:100,prio:1,contact:true},
+  woodhammer:{name:"ウッドハンマー",type:"grass",cat:"phys",power:120,pp:15,acc:100,recoil:true,contact:true},
+  flowertrick:{name:"トリックフラワー",type:"grass",cat:"phys",power:70,pp:10,acc:100,alwaysCrit:true},
+  suckerpunch:{name:"ふいうち",type:"dark",cat:"phys",power:70,pp:5,acc:100,prio:1,contact:true},
+  knockoff:{name:"はたきおとす",type:"dark",cat:"phys",power:65,pp:20,acc:100,contact:true},
+  nightslash:{name:"つじぎり",type:"dark",cat:"phys",power:70,pp:15,acc:100,highCrit:true,contact:true},
+  meteormash:{name:"コメットパンチ",type:"steel",cat:"phys",power:90,pp:10,acc:90,contact:true},
+  zenheadbutt:{name:"しねんのずつき",type:"psychic",cat:"phys",power:80,pp:15,acc:90,contact:true,sec:{flinch:20}},
+  bulletpunch:{name:"バレットパンチ",type:"steel",cat:"phys",power:40,pp:30,acc:100,prio:1,contact:true},
+  thunderpunch:{name:"かみなりパンチ",type:"electric",cat:"phys",power:75,pp:15,acc:100,contact:true,sec:{status:"par",chance:10}},
+  icepunch:{name:"れいとうパンチ",type:"ice",cat:"phys",power:75,pp:15,acc:100,contact:true,sec:{status:"frz",chance:10}},
+  firepunch:{name:"ほのおのパンチ",type:"fire",cat:"phys",power:75,pp:15,acc:100,contact:true,sec:{status:"brn",chance:10}},
+  flareblitz:{name:"フレアドライブ",type:"fire",cat:"phys",power:120,pp:15,acc:100,recoil:true,contact:true,sec:{status:"brn",chance:10}},
+  darklariat:{name:"DDラリアット",type:"dark",cat:"phys",power:85,pp:10,acc:100,contact:true},
+  crosschop:{name:"クロスチョップ",type:"fighting",cat:"phys",power:100,pp:5,acc:80,highCrit:true,contact:true},
+  closecombat:{name:"インファイト",type:"fighting",cat:"phys",power:120,pp:5,acc:100,contact:true,self:{def:-1,spd:-1}},
+  bodypress:{name:"ボディプレス",type:"fighting",cat:"phys",power:80,pp:10,acc:100,contact:true,usesDef:true},
+  brickbreak:{name:"かわらわり",type:"fighting",cat:"phys",power:75,pp:15,acc:100,contact:true},
+  extremespeed:{name:"しんそく",type:"normal",cat:"phys",power:80,pp:5,acc:100,prio:2,contact:true},
+  quickattack:{name:"でんこうせっか",type:"normal",cat:"phys",power:40,pp:30,acc:100,prio:1,contact:true},
+  doubleedge:{name:"すてみタックル",type:"normal",cat:"phys",power:120,pp:15,acc:100,recoil:true,contact:true},
+  bodyslam:{name:"のしかかり",type:"normal",cat:"phys",power:85,pp:15,acc:100,contact:true,sec:{status:"par",chance:30}},
+  bravebird:{name:"ブレイブバード",type:"flying",cat:"phys",power:120,pp:15,acc:100,recoil:true,contact:true},
+  aerialace:{name:"つばめがえし",type:"flying",cat:"phys",power:60,pp:20,acc:null,contact:true},
+  iciclecrash:{name:"つららおとし",type:"ice",cat:"phys",power:85,pp:10,acc:90,sec:{flinch:30}},
+  iceshard:{name:"こおりのつぶて",type:"ice",cat:"phys",power:40,pp:30,acc:100,prio:1},
+  wickedblow:{name:"あんこくきょうだ",type:"dark",cat:"phys",power:75,pp:5,acc:100,alwaysCrit:true,contact:true},
+  wavecrash:{name:"ウェーブタックル",type:"water",cat:"phys",power:120,pp:10,acc:100,recoil:true,contact:true},
+  aquajet:{name:"アクアジェット",type:"water",cat:"phys",power:40,pp:20,acc:100,prio:1,contact:true},
+  waterfall:{name:"たきのぼり",type:"water",cat:"phys",power:80,pp:15,acc:100,contact:true,sec:{flinch:20}},
+  gunkshot:{name:"ダストシュート",type:"poison",cat:"phys",power:120,pp:5,acc:80,sec:{status:"psn",chance:30}},
+  kowtowcleave:{name:"ドゲザン",type:"dark",cat:"phys",power:85,pp:10,acc:null,contact:true},
+  wildcharge:{name:"ワイルドボルト",type:"electric",cat:"phys",power:90,pp:15,acc:100,recoil:true,contact:true},
+
+  flamethrower:{name:"かえんほうしゃ",type:"fire",cat:"spec",power:90,pp:15,acc:100,sec:{status:"brn",chance:10}},
+  fireblast:{name:"だいもんじ",type:"fire",cat:"spec",power:110,pp:5,acc:85,sec:{status:"brn",chance:10}},
+  magicalflame:{name:"マジカルフレイム",type:"fire",cat:"spec",power:75,pp:10,acc:100,target:{spa:-1}},
+  airslash:{name:"エアスラッシュ",type:"flying",cat:"spec",power:75,pp:15,acc:95,sec:{flinch:30}},
+  dragonpulse:{name:"りゅうのはどう",type:"dragon",cat:"spec",power:85,pp:10,acc:100},
+  dracometeor:{name:"りゅうせいぐん",type:"dragon",cat:"spec",power:130,pp:5,acc:90,self:{spa:-2}},
+  leafstorm:{name:"リーフストーム",type:"grass",cat:"spec",power:130,pp:5,acc:90,self:{spa:-2}},
+  flashcannon:{name:"ラスターカノン",type:"steel",cat:"spec",power:80,pp:10,acc:100},
+  makeitrain:{name:"ゴールドラッシュ",type:"steel",cat:"spec",power:120,pp:5,acc:100,self:{spa:-1}},
+  thunderbolt:{name:"10まんボルト",type:"electric",cat:"spec",power:90,pp:15,acc:100,sec:{status:"par",chance:10}},
+  thunder:{name:"かみなり",type:"electric",cat:"spec",power:110,pp:10,acc:70,rainPerfect:true,sec:{status:"par",chance:30}},
+  voltswitch:{name:"ボルトチェンジ",type:"electric",cat:"spec",power:70,pp:20,acc:100},
+  focusblast:{name:"きあいだま",type:"fighting",cat:"spec",power:120,pp:5,acc:70},
+  aurasphere:{name:"はどうだん",type:"fighting",cat:"spec",power:80,pp:20,acc:null},
+  shadowball:{name:"シャドーボール",type:"ghost",cat:"spec",power:80,pp:15,acc:100},
+  sludgebomb:{name:"ヘドロばくだん",type:"poison",cat:"spec",power:90,pp:10,acc:100,sec:{status:"psn",chance:30}},
+  psychic:{name:"サイコキネシス",type:"psychic",cat:"spec",power:90,pp:10,acc:100},
+  psyshock:{name:"サイコショック",type:"psychic",cat:"spec",power:80,pp:10,acc:100,targetsDef:true},
+  moonblast:{name:"ムーンフォース",type:"fairy",cat:"spec",power:95,pp:15,acc:100},
+  dazzlinggleam:{name:"マジカルシャイン",type:"fairy",cat:"spec",power:80,pp:10,acc:100},
+  hypervoice:{name:"ハイパーボイス",type:"normal",cat:"spec",power:90,pp:10,acc:100},
+  powergem:{name:"パワージェム",type:"rock",cat:"spec",power:80,pp:20,acc:100},
+  hydropump:{name:"ハイドロポンプ",type:"water",cat:"spec",power:110,pp:5,acc:80},
+  darkpulse:{name:"あくのはどう",type:"dark",cat:"spec",power:80,pp:15,acc:100,sec:{flinch:20}},
+  icebeam:{name:"れいとうビーム",type:"ice",cat:"spec",power:90,pp:10,acc:100,sec:{status:"frz",chance:10}},
+  watershuriken:{name:"みずしゅりけん",type:"water",cat:"spec",power:45,pp:20,acc:100,prio:1},
+
+  willowisp:{name:"おにび",type:"fire",cat:"status",pp:15,acc:85,inflict:"brn"},
+  thunderwave:{name:"でんじは",type:"electric",cat:"status",pp:20,acc:90,inflict:"par"},
+  raindance:{name:"あまごい",type:"water",cat:"status",pp:5,acc:null,weather:"rain"},
+  sunnyday:{name:"にほんばれ",type:"fire",cat:"status",pp:5,acc:null,weather:"sun"},
+  sandstormmove:{name:"すなあらし",type:"rock",cat:"status",pp:10,acc:null,weather:"sand"},
+};
+
+/* ===== とくせい ===== */
+const ABILITIES = {
+  roughskin:{name:"さめはだ",desc:"接触わざを受けると相手にダメージ"},
+  disguise:{name:"ばけのかわ",desc:"最初の攻撃を1回だけ無効化"},
+  blaze:{name:"もうか",desc:"HP1/3以下でほのお技1.5倍"},
+  torrent:{name:"げきりゅう",desc:"HP1/3以下でみず技1.5倍"},
+  overgrow:{name:"しんりょく",desc:"HP1/3以下でくさ技1.5倍"},
+  solarpower:{name:"サンパワー",desc:"晴れで特攻1.5倍/毎ターンHP減"},
+  protean:{name:"へんげんじざい",desc:"使う技と同じタイプに変化"},
+  clearbody:{name:"クリアボディ",desc:"能力を下げられない"},
+  stamina:{name:"じきゅうりょく",desc:"攻撃を受けると防御が上がる"},
+  sturdy:{name:"がんじょう",desc:"HP満タンなら一撃で倒れない"},
+  intimidate:{name:"いかく",desc:"登場時に相手の攻撃を下げる"},
+  goodasgold:{name:"おうごんのからだ",desc:"変化技を受けない"},
+  pixilate:{name:"フェアリースキン",desc:"ノーマル技→フェアリー1.2倍"},
+  defiant:{name:"まけんき",desc:"能力を下げられると攻撃2段階UP"},
+  supremeoverlord:{name:"そうだいしょう",desc:"倒れた味方の数だけ攻撃・特攻UP"},
+  multiscale:{name:"マルチスケイル",desc:"HP満タン時ダメージ半減"},
+  cursedbody:{name:"のろわれボディ",desc:"(かなしばりは未実装)"},
+  shadowtag:{name:"かげふみ",desc:"相手は交代できない"},
+  adaptability:{name:"てきおうりょく",desc:"タイプ一致2倍"},
+  sandstream:{name:"すなおこし",desc:"登場時に砂あらし"},
+  sandforce:{name:"すなのちから",desc:"砂で岩/地/鋼技1.3倍"},
+  swiftswim:{name:"すいすい",desc:"雨で素早さ2倍"},
+  justified:{name:"せいぎのこころ",desc:"あく技を受けると攻撃UP"},
+  protosynthesis:{name:"こだいかっせい",desc:"晴れで一番高い能力1.3倍"},
+  drought:{name:"ひでり",desc:"登場時に晴れ"},
+  drizzle:{name:"あめふらし",desc:"登場時に雨"},
+  toughclaws:{name:"かたいツメ",desc:"接触わざ1.3倍"},
+  reckless:{name:"すてみ",desc:"反動わざ1.2倍"},
+  unseenfist:{name:"ふかしのこぶし",desc:"(まもる貫通・未実装)"},
+  innerfocus:{name:"せいしんりょく",desc:"ひるまない・いかく無効"},
+  static:{name:"せいでんき",desc:"接触されると30%でまひ"},
+  noguard:{name:"ノーガード",desc:"お互いの技が必ず当たる"},
+  contrary:{name:"あまのじゃく",desc:"能力変化が逆になる"},
+  electricsurge:{name:"エレキメイカー",desc:"(エレキフィールド未実装)"},
+  guts:{name:"こんじょう",desc:"状態異常で攻撃1.5倍/やけど半減無効"},
+};
+
+/* ===== もちもの ===== */
+const ITEMS = {
+  none:{name:"なし",desc:""},
+  choiceband:{name:"こだわりハチマキ",desc:"攻撃1.5倍/同じ技のみ"},
+  choicespecs:{name:"こだわりメガネ",desc:"特攻1.5倍/同じ技のみ"},
+  choicescarf:{name:"こだわりスカーフ",desc:"素早さ1.5倍/同じ技のみ"},
+  lifeorb:{name:"いのちのたま",desc:"威力1.3倍/攻撃後HP1/10減"},
+  focussash:{name:"きあいのタスキ",desc:"満タンから一撃をHP1で耐える"},
+  sitrusberry:{name:"オボンのみ",desc:"HP半分以下で1/4回復(1回)"},
+  leftovers:{name:"たべのこし",desc:"毎ターンHP1/16回復"},
+  assaultvest:{name:"とつげきチョッキ",desc:"特防1.5倍/変化技が使えない"},
+  weaknesspolicy:{name:"じゃくてんほけん",desc:"弱点を突かれると攻撃・特攻2UP"},
+  flameorb:{name:"かえんだま",desc:"ターン終了時に自分がやけど(こんじょう用)"},
+};
+
+/* ===== せいかく ===== */
+const NATURES = {
+  hardy:{jp:"がんばりや"}, lonely:{jp:"さみしがり",up:"atk",down:"def"}, adamant:{jp:"いじっぱり",up:"atk",down:"spa"},
+  naughty:{jp:"やんちゃ",up:"atk",down:"spd"}, brave:{jp:"ゆうかん",up:"atk",down:"spe"},
+  bold:{jp:"ずぶとい",up:"def",down:"atk"}, docile:{jp:"すなお"}, impish:{jp:"わんぱく",up:"def",down:"spa"},
+  lax:{jp:"のうてんき",up:"def",down:"spd"}, relaxed:{jp:"のんき",up:"def",down:"spe"},
+  modest:{jp:"ひかえめ",up:"spa",down:"atk"}, mild:{jp:"おっとり",up:"spa",down:"def"}, bashful:{jp:"てれや"},
+  rash:{jp:"うっかりや",up:"spa",down:"spd"}, quiet:{jp:"れいせい",up:"spa",down:"spe"},
+  calm:{jp:"おだやか",up:"spd",down:"atk"}, gentle:{jp:"おとなしい",up:"spd",down:"def"}, careful:{jp:"しんちょう",up:"spd",down:"spa"},
+  quirky:{jp:"きまぐれ"}, sassy:{jp:"なまいき",up:"spd",down:"spe"},
+  timid:{jp:"おくびょう",up:"spe",down:"atk"}, hasty:{jp:"せっかち",up:"spe",down:"def"}, jolly:{jp:"ようき",up:"spe",down:"spa"},
+  naive:{jp:"むじゃき",up:"spe",down:"spd"}, serious:{jp:"まじめ"},
+};
+const STAT_KEYS = ["hp","atk","def","spa","spd","spe"];
+const STAT_JP = {hp:"HP",atk:"こうげき",def:"ぼうぎょ",spa:"とくこう",spd:"とくぼう",spe:"すばやさ"};
+function natureLabel(id){ const n=NATURES[id]; return n.up ? `${n.jp}（${STAT_JP[n.up]}↑ ${STAT_JP[n.down]}↓）` : `${n.jp}（補正なし）`; }
+
+/* ===== 状態異常 ===== */
+const STATUS_INFO = {
+  brn:{jp:"やけど",color:"#F08030"}, par:{jp:"まひ",color:"#E8B800"}, psn:{jp:"どく",color:"#A040A0"},
+  slp:{jp:"ねむり",color:"#8a97c8"}, frz:{jp:"こおり",color:"#70C8C8"},
+};
+
+/* ===== 図鑑（21体） ===== */
+const SPECIES = {
+  garchomp:{name:"ガブリアス",types:["dragon","ground"],base:[108,130,95,80,85,102],abilities:["roughskin"],
+    pool:["earthquake","dragonclaw","outrage","stoneedge","firefang","crunch","ironhead","fireblast"],
+    defPts:{atk:32,spe:32,hp:2},defItem:"lifeorb",defNature:"jolly",img:"garchomp",
+    megas:[{id:"garchompMega",name:"メガガブリアス",stone:"ガブリアスナイト",base:[108,170,115,120,95,92],types:["dragon","ground"],ability:"sandforce",img:"garchomp-mega"}]},
+  mimikyu:{name:"ミミッキュ",types:["ghost","fairy"],base:[55,90,80,50,105,96],abilities:["disguise"],
+    pool:["playrough","shadowclaw","shadowsneak","woodhammer","thunderbolt","shadowball"],
+    defPts:{atk:32,spe:32,hp:2},defItem:"lifeorb",defNature:"jolly",img:"mimikyu"},
+  charizard:{name:"リザードン",types:["fire","flying"],base:[78,84,78,109,85,100],abilities:["blaze","solarpower"],
+    pool:["flamethrower","fireblast","airslash","dragonclaw","dragonpulse","earthquake","flareblitz","sunnyday"],
+    defPts:{spa:32,spe:32,hp:2},defItem:"stone:charizardMegaY",defNature:"timid",img:"charizard",
+    megas:[{id:"charizardMegaX",name:"メガリザードンX",stone:"リザードナイトX",base:[78,130,111,130,85,100],types:["fire","dragon"],ability:"toughclaws",img:"charizard-megax"},
+           {id:"charizardMegaY",name:"メガリザードンY",stone:"リザードナイトY",base:[78,104,78,159,115,100],types:["fire","flying"],ability:"drought",img:"charizard-megay"}]},
+  meowscarada:{name:"マスカーニャ",types:["grass","dark"],base:[76,110,70,81,70,123],abilities:["overgrow","protean"],
+    pool:["flowertrick","suckerpunch","playrough","knockoff","nightslash","leafstorm"],
+    defPts:{atk:32,spe:32,hp:2},defItem:"focussash",defNature:"jolly",img:"meowscarada"},
+  metagross:{name:"メタグロス",types:["steel","psychic"],base:[80,135,130,95,90,70],abilities:["clearbody"],
+    pool:["meteormash","zenheadbutt","earthquake","bulletpunch","ironhead","thunderpunch","icepunch","stoneedge"],
+    defPts:{atk:32,hp:32,spd:2},defItem:"stone:metagrossMega",defNature:"adamant",img:"metagross",
+    megas:[{id:"metagrossMega",name:"メガメタグロス",stone:"メタグロスナイト",base:[80,145,150,105,110,110],types:["steel","psychic"],ability:"toughclaws",img:"metagross-mega"}]},
+  archaludon:{name:"ブリジュラス",types:["steel","dragon"],base:[90,105,130,125,65,85],abilities:["stamina","sturdy"],
+    pool:["flashcannon","dracometeor","thunderbolt","focusblast","dragonpulse","bodypress"],
+    defPts:{spa:32,hp:32,def:2},defItem:"leftovers",defNature:"modest",img:"archaludon"},
+  incineroar:{name:"ガオガエン",types:["fire","dark"],base:[95,115,90,80,90,60],abilities:["intimidate","blaze"],
+    pool:["flareblitz","darklariat","crosschop","earthquake","knockoff","flamethrower","willowisp"],
+    defPts:{atk:32,hp:32,spd:2},defItem:"sitrusberry",defNature:"adamant",img:"incineroar"},
+  gholdengo:{name:"サーフゴー",types:["steel","ghost"],base:[87,60,95,133,91,84],abilities:["goodasgold"],
+    pool:["makeitrain","shadowball","thunderbolt","focusblast","psyshock","powergem"],
+    defPts:{spa:32,spe:32,hp:2},defItem:"choicespecs",defNature:"modest",img:"gholdengo"},
+  sylveon:{name:"ニンフィア",types:["fairy"],base:[95,65,65,110,130,60],abilities:["pixilate"],
+    pool:["hypervoice","moonblast","shadowball","psyshock","magicalflame","quickattack"],
+    defPts:{spa:32,hp:32,def:2},defItem:"choicespecs",defNature:"modest",img:"sylveon"},
+  kingambit:{name:"ドドゲザン",types:["dark","steel"],base:[100,135,120,60,85,50],abilities:["supremeoverlord","defiant"],
+    pool:["kowtowcleave","ironhead","suckerpunch","stoneedge","nightslash","brickbreak"],
+    defPts:{atk:32,hp:32,spd:2},defItem:"leftovers",defNature:"adamant",img:"kingambit"},
+  dragonite:{name:"カイリュー",types:["dragon","flying"],base:[91,134,95,100,100,80],abilities:["multiscale","innerfocus"],
+    pool:["outrage","extremespeed","earthquake","ironhead","firepunch","dracometeor","bodyslam"],
+    defPts:{atk:32,hp:32,spd:2},defItem:"choiceband",defNature:"adamant",img:"dragonite"},
+  gengar:{name:"ゲンガー",types:["ghost","poison"],base:[60,65,60,130,75,110],abilities:["cursedbody"],
+    pool:["shadowball","sludgebomb","thunderbolt","focusblast","psychic","dazzlinggleam","willowisp","thunderwave"],
+    defPts:{spa:32,spe:32,hp:2},defItem:"stone:gengarMega",defNature:"timid",img:"gengar",
+    megas:[{id:"gengarMega",name:"メガゲンガー",stone:"ゲンガナイト",base:[60,65,80,170,95,130],types:["ghost","poison"],ability:"shadowtag",img:"gengar-mega"}]},
+  lucario:{name:"ルカリオ",types:["fighting","steel"],base:[70,110,70,115,70,90],abilities:["justified","innerfocus"],
+    pool:["closecombat","aurasphere","flashcannon","extremespeed","shadowball","stoneedge","meteormash"],
+    defPts:{atk:32,spe:32,hp:2},defItem:"stone:lucarioMega",defNature:"jolly",img:"lucario",
+    megas:[{id:"lucarioMega",name:"メガルカリオ",stone:"ルカリオナイト",base:[70,145,88,140,70,112],types:["fighting","steel"],ability:"adaptability",img:"lucario-mega"}]},
+  tyranitar:{name:"バンギラス",types:["rock","dark"],base:[100,134,110,95,100,61],abilities:["sandstream"],
+    pool:["stoneedge","rockslide","crunch","earthquake","ironhead","icepunch","firepunch"],
+    defPts:{atk:32,hp:32,spd:2},defItem:"stone:tyranitarMega",defNature:"adamant",img:"tyranitar",
+    megas:[{id:"tyranitarMega",name:"メガバンギラス",stone:"バンギラスナイト",base:[100,164,150,95,120,71],types:["rock","dark"],ability:"sandstream",img:"tyranitar-mega"}]},
+  swampert:{name:"ラグラージ",types:["water","ground"],base:[100,110,90,85,90,60],abilities:["torrent"],
+    pool:["waterfall","earthquake","icepunch","stoneedge","hydropump","rockslide","raindance"],
+    defPts:{atk:32,hp:32,spd:2},defItem:"stone:swampertMega",defNature:"adamant",img:"swampert",
+    megas:[{id:"swampertMega",name:"メガラグラージ",stone:"ラグラージナイト",base:[100,150,110,95,110,70],types:["water","ground"],ability:"swiftswim",img:"swampert-mega"}]},
+  fluttermane:{name:"ハバタクカミ",types:["ghost","fairy"],base:[55,55,55,135,135,135],abilities:["protosynthesis"],
+    pool:["moonblast","shadowball","magicalflame","powergem","psyshock","dazzlinggleam"],
+    defPts:{spa:32,spe:32,hp:2},defItem:"focussash",defNature:"timid",img:"fluttermane"},
+  staraptor:{name:"ムクホーク",types:["normal","flying"],base:[85,120,70,50,60,100],abilities:["reckless","intimidate"],
+    pool:["bravebird","doubleedge","closecombat","quickattack","aerialace"],
+    defPts:{atk:32,spe:32,hp:2},defItem:"stone:staraptorMega",defNature:"jolly",img:"staraptor",
+    megas:[{id:"staraptorMega",name:"メガムクホーク",stone:"ムクホークナイト",base:[85,140,100,60,90,110],types:["normal","flying"],ability:"contrary",img:null}]},
+  urshifu:{name:"ウーラオス",types:["fighting","dark"],base:[100,130,100,63,60,97],abilities:["unseenfist"],
+    pool:["wickedblow","closecombat","suckerpunch","ironhead","stoneedge","firepunch"],
+    defPts:{atk:32,spe:32,hp:2},defItem:"lifeorb",defNature:"jolly",img:"urshifu"},
+  basculegion:{name:"イダイトウ",types:["water","ghost"],base:[120,112,65,80,75,78],abilities:["adaptability","swiftswim"],
+    pool:["wavecrash","waterfall","aquajet","crunch","shadowball","raindance"],
+    defPts:{atk:32,spe:32,hp:2},defItem:"choiceband",defNature:"adamant",img:"basculegion"},
+  greninja:{name:"ゲッコウガ",types:["water","dark"],base:[72,95,67,103,71,122],abilities:["protean","torrent"],
+    pool:["hydropump","darkpulse","icebeam","gunkshot","watershuriken","nightslash"],
+    defPts:{spa:32,spe:32,hp:2},defItem:"lifeorb",defNature:"timid",img:"greninja"},
+  raichu:{name:"ライチュウ",types:["electric"],base:[60,90,55,90,80,110],abilities:["static"],
+    pool:["thunderbolt","thunder","voltswitch","wildcharge","quickattack","focusblast","bodyslam","thunderwave"],
+    defPts:{spa:32,spe:32,hp:2},defItem:"stone:raichuMegaY",defNature:"timid",img:"raichu",
+    megas:[{id:"raichuMegaX",name:"メガライチュウX",stone:"ライチュウナイトX",base:[60,135,95,90,95,110],types:["electric"],ability:"electricsurge",img:null},
+           {id:"raichuMegaY",name:"メガライチュウY",stone:"ライチュウナイトY",base:[60,100,55,160,80,130],types:["electric"],ability:"noguard",img:null}]},
+};
+
+const spritePathByImg = (img, back) => `sprites/${img}${back ? "-back" : ""}.gif`;
+const spritePath = (key, back) => spritePathByImg(SPECIES[key].img, back);
+const findMega = (k, id) => (SPECIES[k].megas || []).find((m) => m.id === id) || null;
+
+/* ===== ステータス計算（Lv50・チャンピオンズ仕様: 66pt/各32/1pt=+1・IV31） ===== */
+const LEVEL = 50, PTS_TOTAL = 66, PTS_MAX = 32;
+function calcStatsFromBase(base, pts, nature) {
+  const core = (i) => Math.floor((2 * base[i] + 31) * LEVEL / 100);
+  const nt = NATURES[nature] || {};
+  const st = (i, k) => {
+    let v = core(i) + 5;
+    if (nt.up === k) v = Math.floor(v * 1.1);
+    if (nt.down === k) v = Math.floor(v * 0.9);
+    return v + (pts[k] || 0);
+  };
+  return { hp: core(0) + LEVEL + 10 + (pts.hp || 0), atk: st(1,"atk"), def: st(2,"def"), spa: st(3,"spa"), spd: st(4,"spd"), spe: st(5,"spe") };
+}
+const calcStats = (key, pts, nature) => calcStatsFromBase(SPECIES[key].base, pts, nature);
+
+function makeMon(entry) {
+  const sp = SPECIES[entry.key];
+  const s = calcStats(entry.key, entry.pts, entry.nature);
+  return {
+    key: entry.key, name: sp.name, types: [...sp.types], baseTypes: [...sp.types],
+    nature: entry.nature, maxHp: s.hp, hp: s.hp,
+    atk: s.atk, def: s.def, spa: s.spa, spd: s.spd, spe: s.spe,
+    ability: entry.ability, item: entry.item, itemUsed: false,
+    pts: entry.pts, img: sp.img, isMega: false, megaAura: false,
+    stages: {atk:0,def:0,spa:0,spd:0,spe:0}, choiceLock: null, disguiseBusted: false,
+    status: null, sleepTurns: 0, flinched: false,
+    moves: entry.moves.map((k) => ({ key: k, pp: MOVES[k].pp })),
+  };
+}
+
+/* ===== サウンド ===== */
+let audioCtx = null;
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+const NOTE_BASE = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+function noteFreq(n) {
+  const m = /^([A-G])([#b]?)(\d)$/.exec(n);
+  const midi = (parseInt(m[3]) + 1) * 12 + NOTE_BASE[m[1]] + (m[2] === "#" ? 1 : m[2] === "b" ? -1 : 0);
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+const Music = {
+  muted: false, master: null, current: null, timer: null,
+  ensure() { const ctx = getCtx(); if (!this.master) { this.master = ctx.createGain(); this.master.gain.value = this.muted ? 0 : 1; this.master.connect(ctx.destination); } },
+  toggleMute() { this.muted = !this.muted; if (this.master) this.master.gain.value = this.muted ? 0 : 1; return this.muted; },
+  stop() {
+    if (this.timer) { clearTimeout(this.timer); this.timer = null; }
+    if (this.current) { const g = this.current.gain; g.gain.setTargetAtTime(0, getCtx().currentTime, .05); setTimeout(() => { try { g.disconnect(); } catch(e){} }, 300); this.current = null; }
+  },
+  play(key) {
+    this.ensure();
+    if (this.current && this.current.key === key) return;
+    this.stop();
+    const ctx = getCtx(), song = SONGS[key];
+    const gain = ctx.createGain(); gain.connect(this.master);
+    this.current = { key, gain };
+    const beat = 60 / song.bpm;
+    let t0 = ctx.currentTime + .06;
+    if (song.intro) { this.section(song.intro, t0, beat, gain); t0 += song.intro.beats * beat; }
+    const dur = song.beats * beat;
+    const loop = (t) => {
+      if (!this.current || this.current.key !== key) return;
+      this.section(song, t, beat, gain);
+      this.timer = setTimeout(() => loop(t + dur), (t + dur - ctx.currentTime - .3) * 1000);
+    };
+    loop(t0);
+  },
+  section(sec, t0, beat, out) {
+    for (const tr of sec.tracks) {
+      let t = t0;
+      for (const [note, beats] of tr.notes) {
+        const d = beats * beat;
+        if (note) {
+          const ctx = getCtx(), o = ctx.createOscillator(), g = ctx.createGain();
+          o.type = tr.wave; o.frequency.value = noteFreq(note);
+          g.gain.setValueAtTime(0, t);
+          g.gain.linearRampToValueAtTime(tr.vol, t + .012);
+          g.gain.setValueAtTime(tr.vol, t + d * .68);
+          g.gain.linearRampToValueAtTime(.0001, t + d * .92);
+          o.connect(g).connect(out); o.start(t); o.stop(t + d);
+        }
+        t += d;
+      }
+    }
+    if (sec.drums) this.drums(sec.drums, t0, beat, sec.beats, out);
+  },
+  drums(dr, t0, beat, beats, out) {
+    const ctx = getCtx();
+    for (let b = 0; b < beats; b += dr.kickEvery || 1) {
+      const t = t0 + b * beat, o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "sine"; o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(40, t + .1);
+      g.gain.setValueAtTime(.09, t); g.gain.exponentialRampToValueAtTime(.001, t + .12);
+      o.connect(g).connect(out); o.start(t); o.stop(t + .13);
+    }
+    const noise = (t, vol, dur) => {
+      const s = ctx.createBufferSource(); s.buffer = getNoiseBuffer();
+      const g = ctx.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+      s.connect(g).connect(out); s.start(t); s.stop(t + dur + .01);
+    };
+    if (dr.snareEvery) for (let b = dr.snareOffset ?? 1; b < beats; b += dr.snareEvery) noise(t0 + b * beat, .06, .09);
+    if (dr.hat) for (let b = dr.hatOffset ?? .5; b < beats; b += dr.hatEvery || 1) noise(t0 + b * beat, .02, .035);
+  },
+};
+let noiseBuf = null;
+function getNoiseBuffer() {
+  if (!noiseBuf) {
+    const ctx = getCtx();
+    noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * .1), ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  return noiseBuf;
+}
+
+/* ===== 楽曲（オリジナル・ポケモン風） =====
+   バトル曲: 高速駆け下がり→シンコペのAメロ→跳ねるBメロ、駆けるベースと裏打ちハット */
+const SONGS = {
+  title: {
+    bpm: 100, beats: 16,
+    tracks: [
+      { wave: "triangle", vol: .05, notes: [
+        ["G4",1],["C5",1],["E5",1.5],["D5",.5],["C5",1],["D5",1],["E5",1],["G5",1],
+        ["A5",1.5],["G5",.5],["E5",1],["C5",1],["D5",2],["G4",2],
+      ]},
+      { wave: "square", vol: .015, notes: [
+        ["C3",2],["G2",2],["A2",2],["E2",2],["F2",2],["C3",2],["G2",2],["G2",2],
+      ]},
+    ],
+  },
+  battle: {
+    bpm: 184, beats: 32,
+    intro: {
+      beats: 4,
+      tracks: [
+        { wave: "square", vol: .042, notes: [
+          ["E6",.25],["Eb6",.25],["D6",.25],["Db6",.25],["C6",.25],["B5",.25],["Bb5",.25],["A5",.25],
+          ["Ab5",.25],["G5",.25],["Gb5",.25],["F5",.25],["E5",.25],["Eb5",.25],["D5",.25],["B4",.25],
+        ]},
+        { wave: "triangle", vol: .075, notes: [
+          ["E2",.25],["E2",.25],["E2",.25],["E2",.25],["E2",.25],["E2",.25],["E2",.25],["E2",.25],
+          ["D2",.25],["D2",.25],["D2",.25],["D2",.25],["B1",.25],["B1",.25],["B1",.25],["B1",.25],
+        ]},
+      ],
+      drums: { kickEvery: .5 },
+    },
+    drums: { kickEvery: 1, snareEvery: 2, snareOffset: 1, hat: true, hatEvery: .5, hatOffset: .25 },
+    tracks: [
+      { wave: "square", vol: .034, notes: [
+        // A: 疾走リフ（シンコペーション）
+        ["E5",.75],["E5",.25],["G5",.5],["A5",.5],["B5",.75],["B5",.25],["A5",.5],["G5",.5],
+        ["A5",.75],["A5",.25],["C6",.5],["B5",.5],["A5",.5],["G5",.5],["E5",1],
+        ["E5",.75],["E5",.25],["G5",.5],["A5",.5],["B5",.5],["D6",.5],["C6",.5],["B5",.5],
+        ["A5",.5],["B5",.25],["A5",.25],["G5",.5],["F#5",.5],["G5",.5],["A5",.5],["B5",1],
+        // B: 高音で畳みかける
+        ["E6",.5],["B5",.5],["G5",.5],["B5",.5],["E6",.5],["D6",.25],["C6",.25],["B5",.5],["C6",.5],
+        ["D6",.75],["D6",.25],["C6",.5],["B5",.5],["A5",.5],["G5",.5],["A5",1],
+        ["C6",.5],["A5",.5],["F5",.5],["A5",.5],["C6",.5],["B5",.25],["A5",.25],["G5",.5],["A5",.5],
+        ["B5",.5],["C6",.5],["B5",.5],["A5",.5],["G5",.5],["F#5",.5],["E5",1],
+      ]},
+      { wave: "triangle", vol: .075, notes: [
+        ["E2",.5],["E3",.5],["E2",.5],["E3",.5],["E2",.5],["E3",.5],["D2",.5],["D3",.5],
+        ["C2",.5],["C3",.5],["C2",.5],["C3",.5],["D2",.5],["D3",.5],["B1",.5],["B2",.5],
+        ["E2",.5],["E3",.5],["E2",.5],["E3",.5],["E2",.5],["E3",.5],["D2",.5],["D3",.5],
+        ["A1",.5],["A2",.5],["A1",.5],["A2",.5],["B1",.5],["B2",.5],["B1",.5],["B2",.5],
+        ["E2",.5],["E3",.5],["E2",.5],["E3",.5],["E2",.5],["E3",.5],["E2",.5],["E3",.5],
+        ["D2",.5],["D3",.5],["D2",.5],["D3",.5],["A1",.5],["A2",.5],["A1",.5],["A2",.5],
+        ["F1",.5],["F2",.5],["F1",.5],["F2",.5],["C2",.5],["C3",.5],["C2",.5],["C3",.5],
+        ["B1",.5],["B2",.5],["B1",.5],["B2",.5],["E2",.5],["B1",.5],["E2",.5],["E3",.5],
+      ]},
+    ],
+  },
+  victory: {
+    bpm: 138, beats: 16,
+    intro: {
+      beats: 4,
+      tracks: [
+        { wave: "square", vol: .045, notes: [["C6",.25],["C6",.25],["C6",.25],["C6",1.25],["G5",.75],["A5",.5],["C6",.75]] },
+        { wave: "triangle", vol: .06, notes: [["C3",2],["G2",2]] },
+      ],
+    },
+    drums: { kickEvery: 2, snareEvery: 2, snareOffset: 1, hat: true, hatEvery: 1, hatOffset: .5 },
+    tracks: [
+      { wave: "square", vol: .04, notes: [
+        ["E5",.5],["G5",.5],["C6",1],["G5",1],["A5",.5],["B5",.5],["C6",2],["G5",1],["E5",1],
+        ["F5",1],["A5",1],["G5",1],["E5",1],["D5",.5],["E5",.5],["F5",1],["G5",2],
+      ]},
+      { wave: "triangle", vol: .06, notes: [["C3",4],["A2",4],["F2",4],["G2",4]] },
+    ],
+  },
+};
+
+function beep(freq, dur, type = "square", vol = .04) {
+  try {
+    const ctx = getCtx(), o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.value = freq; g.gain.value = vol;
+    g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + dur);
+    o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime + dur);
+  } catch (e) {}
+}
+const sfx = {
+  select: () => beep(880,.08), pick: () => { beep(660,.07); setTimeout(()=>beep(990,.09),70); },
+  unpick: () => beep(440,.09), hit: () => beep(200,.15,"sawtooth",.06),
+  super: () => { beep(150,.22,"sawtooth",.08); setTimeout(()=>beep(120,.18,"sawtooth",.07),90); },
+  weak: () => beep(300,.12,"triangle",.05),
+  faint: () => { beep(400,.1); setTimeout(()=>beep(300,.1),100); setTimeout(()=>beep(200,.3),200); },
+  heal: () => { beep(900,.09); setTimeout(()=>beep(1100,.09),100); setTimeout(()=>beep(1300,.15),200); },
+  send: () => { beep(520,.08); setTimeout(()=>beep(780,.08),80); setTimeout(()=>beep(1040,.12),160); },
+  statup: () => { beep(600,.07); setTimeout(()=>beep(800,.07),80); setTimeout(()=>beep(1000,.1),160); },
+  statdn: () => { beep(500,.09); setTimeout(()=>beep(380,.12),100); },
+  mega: () => [440,554,659,880,1109,1319].forEach((f,i)=>setTimeout(()=>beep(f,.12,"square",.05),i*90)),
+  status: () => beep(260,.2,"triangle",.06),
+};
+
+/* ===== UI基盤 ===== */
+const $ = (id) => document.getElementById(id);
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+$("mute-btn").addEventListener("click", (e) => { e.stopPropagation(); e.target.textContent = Music.toggleMute() ? "🔇" : "♪"; });
+
+let clickResolver = null;
+const waitClick = () => new Promise((r) => { clickResolver = r; });
+function fireClick() { if (clickResolver) { const r = clickResolver; clickResolver = null; r(); } }
+$("screen").addEventListener("click", fireClick);
+document.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === "z" || e.key === " ") fireClick(); });
+
+async function say(text, { noWait = false } = {}) {
+  const el = $("msg-text");
+  $("msg-arrow").classList.add("hidden");
+  el.textContent = "";
+  for (const ch of text) { el.textContent += ch; await wait(20); }
+  if (noWait) { await wait(420); return; }
+  $("msg-arrow").classList.remove("hidden");
+  await waitClick();
+  $("msg-arrow").classList.add("hidden");
+}
+const typeBadge = (t) => `<span class="type-badge" style="background:${TYPE_INFO[t].color}">${TYPE_INFO[t].jp}</span>`;
+function showScene(id) {
+  ["title-scene","box-scene","team-scene","custom-scene","preview-scene","battle-scene"].forEach((s) => $(s).classList.toggle("hidden", s !== id));
+}
+function fitScreen() {
+  const s = Math.min((window.innerWidth) / 412, (window.innerHeight) / 860);
+  $("frame").style.transform = `scale(${s})`;
+}
+window.addEventListener("resize", fitScreen);
+if (window.visualViewport) window.visualViewport.addEventListener("resize", fitScreen);
+let lastVp = "";
+setInterval(() => { const vp = innerWidth + "x" + innerHeight; if (vp !== lastVp) { lastVp = vp; fitScreen(); } }, 700);
+fitScreen();
+
+/* ===== セーブ（ボックスの育成内容を保存） ===== */
+const SAVE_KEY = "pocketbattle_builds_v5";
+function defaultEntry(key) {
+  const sp = SPECIES[key];
+  return { key, pts: Object.assign({hp:0,atk:0,def:0,spa:0,spd:0,spe:0}, sp.defPts),
+    ability: sp.abilities[0], item: sp.defItem || "none", nature: sp.defNature || "serious", moves: sp.pool.filter(m=>MOVES[m].cat!=="status").slice(0,4) };
+}
+const game = { builds: {}, team: [], enemyTeam: [], playerPicks: [] };
+function loadBuilds() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) {}
+  Object.keys(SPECIES).forEach((k) => {
+    game.builds[k] = defaultEntry(k);
+    const s = saved[k];
+    if (s) {
+      if (s.pts) game.builds[k].pts = Object.assign({hp:0,atk:0,def:0,spa:0,spd:0,spe:0}, s.pts);
+      if (s.ability && SPECIES[k].abilities.includes(s.ability)) game.builds[k].ability = s.ability;
+      if (s.nature && NATURES[s.nature]) game.builds[k].nature = s.nature;
+      if (s.item) game.builds[k].item = s.item;
+      if (Array.isArray(s.moves) && s.moves.length === 4 && s.moves.every((m) => SPECIES[k].pool.includes(m))) game.builds[k].moves = [...s.moves];
+    }
+  });
+}
+function saveBuilds() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(game.builds)); } catch (e) {} }
+
+function itemLabel(entry) {
+  if (entry.item.startsWith("stone:")) { const m = findMega(entry.key, entry.item.slice(6)); return m ? m.stone : "？？？"; }
+  return ITEMS[entry.item].name;
+}
+
+/* ===== ボックス / チーム編成 ===== */
+document.querySelectorAll(".tab-btn").forEach((b) => b.addEventListener("click", (e) => {
+  e.stopPropagation(); sfx.select();
+  if (b.dataset.go === "box") { buildBoxScene(); showScene("box-scene"); }
+  else { buildTeamScene(); showScene("team-scene"); }
+}));
+
+function monCard(key, extra = "") {
+  const sp = SPECIES[key];
+  return `<div class="imgwrap"><img src="${spritePath(key,false)}"></div>
+    <div class="nm">${sp.name}</div><div>${sp.types.map(typeBadge).join("")}</div>
+    <div class="it">${itemLabel(game.builds[key])}</div>${extra}`;
+}
+
+function buildBoxScene() {
+  const grid = $("box-grid");
+  grid.innerHTML = "";
+  Object.keys(SPECIES).forEach((key) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = monCard(key);
+    card.addEventListener("click", (e) => { e.stopPropagation(); sfx.select(); openCustomScene(game.builds[key]); });
+    grid.appendChild(card);
+  });
+}
+
+function buildTeamScene() {
+  const grid = $("team-grid");
+  grid.innerHTML = "";
+  Object.keys(SPECIES).forEach((key) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.dataset.key = key;
+    card.innerHTML = monCard(key);
+    card.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const i = game.team.indexOf(key);
+      if (i >= 0) { game.team.splice(i, 1); sfx.unpick(); }
+      else if (game.team.length < 6) { game.team.push(key); sfx.pick(); }
+      renderTeamState();
+    });
+    grid.appendChild(card);
+  });
+  $("team-random").onclick = (e) => {
+    e.stopPropagation();
+    const rest = Object.keys(SPECIES).filter((k) => !game.team.includes(k));
+    while (game.team.length < 6 && rest.length) game.team.push(rest.splice(Math.floor(Math.random()*rest.length),1)[0]);
+    sfx.pick(); renderTeamState();
+  };
+  $("team-go").onclick = (e) => { e.stopPropagation(); if (!$("team-go").disabled) { sfx.pick(); startPreview(); } };
+  renderTeamState();
+}
+
+// もちもの重複チェック（なし以外は1チーム1個まで）
+function dupItems() {
+  const seen = {}, dups = [];
+  game.team.forEach((k) => {
+    const it = game.builds[k].item;
+    if (it === "none") return;
+    if (seen[it]) dups.push(itemLabel(game.builds[k]));
+    seen[it] = true;
+  });
+  return [...new Set(dups)];
+}
+
+function renderTeamState() {
+  document.querySelectorAll("#team-grid .card").forEach((card) => {
+    const idx = game.team.indexOf(card.dataset.key);
+    card.classList.toggle("picked", idx >= 0);
+    let num = card.querySelector(".pick-num");
+    if (idx >= 0) {
+      if (!num) { num = document.createElement("div"); num.className = "pick-num"; card.appendChild(num); }
+      num.textContent = idx + 1;
+    } else if (num) num.remove();
+  });
+  const slots = $("team-slots");
+  slots.innerHTML = "";
+  for (let i = 0; i < 6; i++) {
+    const s = document.createElement("div");
+    s.className = "slot";
+    if (game.team[i]) s.innerHTML = `<img src="${spritePath(game.team[i],false)}"><div>${SPECIES[game.team[i]].name}</div>`;
+    slots.appendChild(s);
+  }
+  const dups = dupItems();
+  $("item-warn").textContent = dups.length ? `⚠ もちものがかぶってるよ: ${dups.join("、")}（ボックスで変えてね）` : "";
+  $("team-go").disabled = game.team.length !== 6 || dups.length > 0;
+}
+
+/* ===== カスタム画面 ===== */
+const PRESETS = [
+  { label: "こうげき特化", pts: {atk:32,spe:32,hp:2} }, { label: "とくこう特化", pts: {spa:32,spe:32,hp:2} },
+  { label: "HPこうげき", pts: {atk:32,hp:32,spd:2} }, { label: "HPとくこう", pts: {spa:32,hp:32,def:2} },
+  { label: "ぶつり耐久", pts: {hp:32,def:32,spd:2} }, { label: "とくしゅ耐久", pts: {hp:32,spd:32,def:2} },
+  { label: "リセット", pts: {} },
+];
+function openCustomScene(entry) {
+  showScene("custom-scene");
+  const sp = SPECIES[entry.key];
+  $("custom-img").src = spritePath(entry.key, false);
+  $("custom-name").textContent = sp.name + " の カスタマイズ";
+  $("custom-back").onclick = (e) => {
+    e.stopPropagation();
+    if (entry.moves.length !== 4) { sfx.unpick(); return; }
+    sfx.pick(); saveBuilds(); buildBoxScene(); showScene("box-scene");
+  };
+  const body = $("custom-body");
+  const render = () => {
+    const used = STAT_KEYS.reduce((s, k) => s + (entry.pts[k] || 0), 0);
+    const stats = calcStats(entry.key, entry.pts, entry.nature);
+    $("custom-remain").textContent = `のうりょくポイント のこり${PTS_TOTAL - used} ／ わざ ${entry.moves.length}/4`;
+    $("custom-back").textContent = entry.moves.length === 4 ? "✓ OK" : `わざ4つ！`;
+    const keepScroll = body.scrollTop;
+    body.innerHTML = "";
+
+    body.insertAdjacentHTML("beforeend", `<div class="sec-title">せいかく</div>`);
+    const natSel = document.createElement("select");
+    natSel.className = "nat-sel";
+    Object.keys(NATURES).forEach((nid) => {
+      const op = document.createElement("option");
+      op.value = nid; op.textContent = natureLabel(nid);
+      if (entry.nature === nid) op.selected = true;
+      natSel.appendChild(op);
+    });
+    natSel.addEventListener("click", (e) => e.stopPropagation());
+    natSel.addEventListener("change", () => { entry.nature = natSel.value; sfx.select(); render(); });
+    body.appendChild(natSel);
+
+    body.insertAdjacentHTML("beforeend", `<div class="sec-title">とくせい</div>`);
+    sp.abilities.forEach((ab) => {
+      const r = document.createElement("div");
+      r.className = "opt-row" + (entry.ability === ab ? " sel" : "");
+      r.innerHTML = `<b>${ABILITIES[ab].name}</b><div class="od">${ABILITIES[ab].desc}</div>`;
+      r.addEventListener("click", (e) => { e.stopPropagation(); entry.ability = ab; sfx.select(); render(); });
+      body.appendChild(r);
+    });
+
+    body.insertAdjacentHTML("beforeend", `<div class="sec-title">もちもの（チームで同じものは1こまで）</div>`);
+    const opts = Object.keys(ITEMS).map((k) => ({ v: k, nm: ITEMS[k].name, d: ITEMS[k].desc }));
+    (sp.megas || []).forEach((m) => opts.push({ v: "stone:" + m.id, nm: m.stone, d: `${m.name}に メガシンカ` }));
+    opts.forEach((op) => {
+      const r = document.createElement("div");
+      const usedByOther = op.v !== "none" && game.team.some((k) => k !== entry.key && game.builds[k].item === op.v);
+      r.className = "opt-row" + (entry.item === op.v ? " sel" : "") + (usedByOther ? " dim" : "");
+      r.innerHTML = `<b>${op.nm}</b>${usedByOther ? " <span style='color:#ff9a9a;font-size:10px'>チームの別のポケモンが所持</span>" : ""}${op.d ? `<div class="od">${op.d}</div>` : ""}`;
+      r.addEventListener("click", (e) => { e.stopPropagation(); entry.item = op.v; sfx.select(); render(); });
+      body.appendChild(r);
+    });
+
+    body.insertAdjacentHTML("beforeend", `<div class="sec-title">わざ（4つ えらぶ）</div>`);
+    const grid = document.createElement("div");
+    grid.id = "mv-grid";
+    sp.pool.forEach((mk) => {
+      const mv = MOVES[mk];
+      const b = document.createElement("div");
+      b.className = "mv-opt" + (entry.moves.includes(mk) ? " sel" : "");
+      b.style.background = `linear-gradient(180deg, ${TYPE_INFO[mv.type].color}, ${TYPE_INFO[mv.type].color}bb)`;
+      b.innerHTML = `${mv.name}<span style="float:right;font-weight:normal">${mv.cat === "status" ? "変化" : mv.power}</span>`;
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const at = entry.moves.indexOf(mk);
+        if (at >= 0) { if (entry.moves.length > 1) { entry.moves.splice(at, 1); sfx.unpick(); } }
+        else if (entry.moves.length < 4) { entry.moves.push(mk); sfx.pick(); }
+        render();
+      });
+      grid.appendChild(b);
+    });
+    body.appendChild(grid);
+
+    body.insertAdjacentHTML("beforeend", `<div class="sec-title">のうりょくポイント（合計66・各32まで・1pt=+1）</div>`);
+    STAT_KEYS.forEach((k, i) => {
+      const row = document.createElement("div");
+      row.className = "ev-row";
+      row.innerHTML = `<span class="lbl">${STAT_JP[k]}</span><span style="width:26px;color:#8a97c8;font-size:11px">${sp.base[i]}</span>
+        <input type="range" min="0" max="${PTS_MAX}" value="${entry.pts[k] || 0}">
+        <span class="pts">${entry.pts[k] || 0}</span><span class="real">→ ${stats[k]}</span>`;
+      const sl = row.querySelector("input");
+      sl.addEventListener("input", () => {
+        const others = STAT_KEYS.reduce((s, kk) => s + (kk === k ? 0 : entry.pts[kk] || 0), 0);
+        entry.pts[k] = Math.min(parseInt(sl.value), PTS_TOTAL - others);
+        render();
+      });
+      sl.addEventListener("click", (e) => e.stopPropagation());
+      body.appendChild(row);
+    });
+    const ps = document.createElement("div");
+    ps.id = "ev-presets";
+    PRESETS.forEach((p) => {
+      const b = document.createElement("button");
+      b.textContent = p.label;
+      b.addEventListener("click", (e) => { e.stopPropagation(); entry.pts = Object.assign({hp:0,atk:0,def:0,spa:0,spd:0,spe:0}, p.pts); sfx.select(); render(); });
+      ps.appendChild(b);
+    });
+    body.appendChild(ps);
+    body.scrollTop = keepScroll;
+  };
+  render();
+  body.scrollTop = 0;
+}
+
+/* ===== 敵ビルド生成（ランダムだけど そのポケモンに合う強さ） ===== */
+function randomEnemyEntry(key) {
+  const sp = SPECIES[key];
+  const e = defaultEntry(key);
+  e.ability = sp.abilities[Math.floor(Math.random() * sp.abilities.length)];
+  const physical = sp.base[1] >= sp.base[3];
+  // 性格: アタッカー適正で選ぶ
+  const natPool = physical ? ["jolly","adamant","jolly","adamant","naive"] : ["timid","modest","timid","modest","hasty"];
+  e.nature = natPool[Math.floor(Math.random() * natPool.length)];
+  // ポイント: 火力+速さ or 火力+HP
+  const atkStat = physical ? "atk" : "spa";
+  e.pts = {hp:0,atk:0,def:0,spa:0,spd:0,spe:0};
+  e.pts[atkStat] = 32;
+  if (Math.random() < (sp.base[5] >= 90 ? .75 : .3)) { e.pts.spe = 32; e.pts.hp = 2; }
+  else { e.pts.hp = 32; e.pts[physical ? "spd" : "def"] = 2; }
+  // 技: 攻撃技を威力×一致で重み付き4つ + たまに変化技
+  const attacks = sp.pool.filter((m) => MOVES[m].cat !== "status");
+  const statusMoves = sp.pool.filter((m) => MOVES[m].cat === "status");
+  const scored = attacks.map((m) => ({ m, s: MOVES[m].power * (sp.types.includes(MOVES[m].type) ? 1.5 : 1) * (.6 + Math.random() * .8) }));
+  scored.sort((a, b) => b.s - a.s);
+  e.moves = scored.slice(0, 4).map((x) => x.m);
+  if (statusMoves.length && e.moves.length === 4 && Math.random() < .3) e.moves[3] = statusMoves[Math.floor(Math.random() * statusMoves.length)];
+  while (e.moves.length < 4 && attacks.length > e.moves.length) e.moves.push(attacks.find((m) => !e.moves.includes(m)));
+  e.moves = e.moves.filter(Boolean);
+  return e;
+}
+
+function enemyAssignItems(team) {
+  const pool = ["lifeorb","choiceband","choicespecs","choicescarf","focussash","sitrusberry","leftovers","assaultvest","weaknesspolicy"];
+  const used = new Set();
+  team.forEach((e) => {
+    const sp = SPECIES[e.key];
+    // メガ持ちは60%でメガストーン
+    if (sp.megas && Math.random() < .6) {
+      const m = sp.megas[Math.floor(Math.random() * sp.megas.length)];
+      e.item = "stone:" + m.id;
+      return;
+    }
+    const physical = sp.base[1] >= sp.base[3];
+    let prefs = physical ? ["choiceband","lifeorb","choicescarf","leftovers","sitrusberry","weaknesspolicy","focussash"] :
+                           ["choicespecs","lifeorb","choicescarf","leftovers","sitrusberry","focussash","assaultvest"];
+    prefs = prefs.concat(pool);
+    const it = prefs.find((p) => !used.has(p));
+    e.item = it || "none";
+    used.add(it);
+  });
+}
+
+/* ===== みせあい ===== */
+function startPreview() {
+  const cp = Object.keys(SPECIES);
+  game.enemyTeam = [];
+  while (game.enemyTeam.length < 6) game.enemyTeam.push(randomEnemyEntry(cp.splice(Math.floor(Math.random() * cp.length), 1)[0]));
+  enemyAssignItems(game.enemyTeam);
+  game.playerPicks = [];
+
+  const eRow = $("enemy-preview");
+  eRow.innerHTML = "";
+  game.enemyTeam.forEach((entry) => {
+    const c = document.createElement("div");
+    c.className = "pv-card";
+    c.innerHTML = `<img src="${spritePath(entry.key,false)}"><div class="nm">${SPECIES[entry.key].name}</div>
+      <div>${SPECIES[entry.key].types.map(typeBadge).join("")}</div><div class="it">${itemLabel(entry)}</div>`;
+    eRow.appendChild(c);
+  });
+  const pRow = $("player-preview");
+  pRow.innerHTML = "";
+  game.team.forEach((key, idx) => {
+    const entry = game.builds[key];
+    const c = document.createElement("div");
+    c.className = "pv-card selectable";
+    c.innerHTML = `<img src="${spritePath(key,false)}"><div class="nm">${SPECIES[key].name}</div>
+      <div>${SPECIES[key].types.map(typeBadge).join("")}</div><div class="it">${itemLabel(entry)}</div>`;
+    c.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const at = game.playerPicks.indexOf(idx);
+      if (at >= 0) { game.playerPicks.splice(at, 1); sfx.unpick(); }
+      else if (game.playerPicks.length < 3) { game.playerPicks.push(idx); sfx.pick(); }
+      renderPreviewPicks();
+    });
+    pRow.appendChild(c);
+  });
+  renderPreviewPicks();
+  showScene("preview-scene");
+}
+function renderPreviewPicks() {
+  document.querySelectorAll("#player-preview .pv-card").forEach((c, idx) => {
+    const at = game.playerPicks.indexOf(idx);
+    c.classList.toggle("chosen", at >= 0);
+    let num = c.querySelector(".pick-num");
+    if (at >= 0) { if (!num) { num = document.createElement("div"); num.className = "pick-num"; c.appendChild(num); } num.textContent = at + 1; }
+    else if (num) num.remove();
+  });
+  $("preview-start").disabled = game.playerPicks.length !== 3;
+}
+$("preview-start").addEventListener("click", (e) => { e.stopPropagation(); if (game.playerPicks.length === 3) { sfx.send(); startBattle(); } });
+
+/* ===== バトル計算 ===== */
+const battle = {
+  playerParty: [], enemyParty: [], pIdx: 0, eIdx: 0,
+  potions: 2, over: false, weather: null, weatherTurns: 0,
+  megaUsed: {player:false,enemy:false}, fainted: {player:0,enemy:0},
+};
+const activeP = () => battle.playerParty[battle.pIdx];
+const activeE = () => battle.enemyParty[battle.eIdx];
+const monOf = (s) => s === "player" ? activeP() : activeE();
+const otherSide = (s) => s === "player" ? "enemy" : "player";
+
+function typeMultiplier(t, def) { return def.types.reduce((m, dt) => m * ((TYPE_CHART[t] || {})[dt] ?? 1), 1); }
+const stMul = (s) => s >= 0 ? (2 + s) / 2 : 2 / (2 - s);
+const hpLow = (m) => m.hp <= Math.floor(m.maxHp / 3);
+
+function effectiveMove(attacker, key) {
+  const mv = Object.assign({}, MOVES[key]);
+  mv.key = key;
+  if (attacker.ability === "pixilate" && mv.type === "normal" && mv.cat !== "status") { mv.type = "fairy"; mv.pixilated = true; }
+  return mv;
+}
+function effAtkStat(a, move, isCrit, side) {
+  const sn = move.usesDef ? "def" : (move.cat === "phys" ? "atk" : "spa");
+  let stage = a.stages[sn];
+  if (isCrit && stage < 0) stage = 0;
+  let v = a[sn] * stMul(stage);
+  if (a.item === "choiceband" && sn === "atk") v *= 1.5;
+  if (a.item === "choicespecs" && sn === "spa") v *= 1.5;
+  if (a.ability === "solarpower" && battle.weather === "sun" && sn === "spa") v *= 1.5;
+  if (a.ability === "supremeoverlord") v *= 1 + .1 * battle.fainted[side];
+  if (a.ability === "guts" && a.status && sn === "atk") v *= 1.5;
+  if (a.ability === "protosynthesis" && battle.weather === "sun") {
+    const best = ["atk","def","spa","spd","spe"].reduce((x, y) => a[x] >= a[y] ? x : y);
+    if (best === sn) v *= 1.3;
+  }
+  if (a.status === "brn" && sn === "atk" && a.ability !== "guts") v *= .5;
+  return Math.floor(v);
+}
+function effDefStat(d, move, isCrit) {
+  const sn = (move.cat === "phys" || move.targetsDef) ? "def" : "spd";
+  let stage = d.stages[sn];
+  if (isCrit && stage > 0) stage = 0;
+  let v = d[sn] * stMul(stage);
+  if (d.item === "assaultvest" && sn === "spd") v *= 1.5;
+  if (battle.weather === "sand" && sn === "spd" && d.types.includes("rock")) v *= 1.5;
+  return Math.floor(v);
+}
+function effSpe(m) {
+  let v = m.spe * stMul(m.stages.spe);
+  if (m.item === "choicescarf") v *= 1.5;
+  if (m.ability === "swiftswim" && battle.weather === "rain") v *= 2;
+  if (m.status === "par") v *= .5;
+  return Math.floor(v);
+}
+function calcDamage(a, d, move, isCrit, side) {
+  const atk = effAtkStat(a, move, isCrit, side), def = effDefStat(d, move, isCrit);
+  let dmg = Math.floor(Math.floor(Math.floor(2 * LEVEL / 5 + 2) * move.power * atk / def) / 50) + 2;
+  if (isCrit) dmg = Math.floor(dmg * 1.5);
+  dmg = Math.floor(dmg * (85 + Math.floor(Math.random() * 16)) / 100);
+  if (a.types.includes(move.type)) dmg = Math.floor(dmg * (a.ability === "adaptability" ? 2 : 1.5));
+  dmg = Math.floor(dmg * typeMultiplier(move.type, d));
+  if (battle.weather === "sun") { if (move.type === "fire") dmg = Math.floor(dmg * 1.5); if (move.type === "water") dmg = Math.floor(dmg * .5); }
+  if (battle.weather === "rain") { if (move.type === "water") dmg = Math.floor(dmg * 1.5); if (move.type === "fire") dmg = Math.floor(dmg * .5); }
+  if (move.pixilated) dmg = Math.floor(dmg * 1.2);
+  if (a.ability === "toughclaws" && move.contact) dmg = Math.floor(dmg * 1.3);
+  if (a.ability === "reckless" && move.recoil) dmg = Math.floor(dmg * 1.2);
+  if (a.ability === "sandforce" && battle.weather === "sand" && ["rock","ground","steel"].includes(move.type)) dmg = Math.floor(dmg * 1.3);
+  if (hpLow(a)) {
+    if (a.ability === "blaze" && move.type === "fire") dmg = Math.floor(dmg * 1.5);
+    if (a.ability === "torrent" && move.type === "water") dmg = Math.floor(dmg * 1.5);
+    if (a.ability === "overgrow" && move.type === "grass") dmg = Math.floor(dmg * 1.5);
+  }
+  if (d.ability === "multiscale" && d.hp === d.maxHp) dmg = Math.floor(dmg * .5);
+  if (a.item === "lifeorb") dmg = Math.floor(dmg * 1.3);
+  return Math.max(1, dmg);
+}
+
+/* ===== バトルUI ===== */
+function setHpBar(m, side) {
+  const pct = Math.max(0, m.hp / m.maxHp * 100);
+  const bar = $(side + "-hp");
+  bar.style.width = pct + "%";
+  bar.classList.toggle("mid", pct <= 50 && pct > 20);
+  bar.classList.toggle("low", pct <= 20 && pct > 0);
+  $(side + "-hp-num").textContent = `${Math.max(0, m.hp)} / ${m.maxHp}`;
+  const st = $(side + "-status");
+  st.innerHTML = m.status ? `<span class="st-badge" style="background:${STATUS_INFO[m.status].color}">${STATUS_INFO[m.status].jp}</span>` : "";
+}
+function updateBalls() {
+  const html = (p) => p.map((m) => `<span class="${m.hp > 0 ? "alive" : "dead"}">●</span>`).join("");
+  $("player-balls").innerHTML = html(battle.playerParty);
+  $("enemy-balls").innerHTML = html(battle.enemyParty);
+}
+function updateWeatherUI() {
+  const ind = $("weather-ind"), sc = $("battle-scene");
+  sc.classList.remove("w-sun","w-sand","w-rain");
+  if (battle.weather === "sun") { ind.textContent = "☀ ひざしが つよい"; sc.classList.add("w-sun"); }
+  else if (battle.weather === "sand") { ind.textContent = "🌪 すなあらし"; sc.classList.add("w-sand"); }
+  else if (battle.weather === "rain") { ind.textContent = "☔ あめ"; sc.classList.add("w-rain"); }
+  ind.classList.toggle("hidden", !battle.weather);
+}
+function refreshSide(side, enter = true) {
+  const m = monOf(side);
+  $(side + "-name").textContent = m.name;
+  $(side + "-img").src = spritePathByImg(m.img, side === "player");
+  const w = $(side + "-wrap");
+  w.classList.remove("faint");
+  w.classList.toggle("mega-aura", !!m.megaAura);
+  if (enter) { w.classList.add(side === "player" ? "enter-player" : "enter-enemy"); setTimeout(() => w.classList.remove("enter-player","enter-enemy"), 600); }
+  setHpBar(m, side);
+  updateBalls();
+}
+async function animateHit(el, mult) {
+  el.classList.add("flashing");
+  (mult > 1 ? sfx.super : mult < 1 ? sfx.weak : sfx.hit)();
+  $("screen").classList.add("shake");
+  await wait(400);
+  el.classList.remove("flashing");
+  $("screen").classList.remove("shake");
+}
+async function faintOut(m, side) {
+  sfx.faint();
+  $(side + "-wrap").classList.add("faint");
+  battle.fainted[side]++;
+  updateBalls();
+  await say(`${m.name}は たおれた！`);
+}
+
+/* ===== ランク・状態異常・とくせい ===== */
+async function applyStatChange(m, side, stat, delta, { fromOpponent = false } = {}) {
+  if (m.ability === "contrary") delta = -delta;
+  if (delta < 0 && fromOpponent && m.ability === "clearbody") { await say(`${m.name}の クリアボディで さがらない！`); return; }
+  const before = m.stages[stat];
+  m.stages[stat] = Math.max(-6, Math.min(6, before + delta));
+  if (m.stages[stat] === before) return;
+  (delta > 0 ? sfx.statup : sfx.statdn)();
+  const w = delta >= 2 ? "ぐーんと あがった" : delta === 1 ? "あがった" : delta === -1 ? "さがった" : "がくっと さがった";
+  await say(`${m.name}の ${STAT_JP[stat]}が ${w}！`);
+  if (delta < 0 && fromOpponent && m.ability === "defiant") { await say(`${m.name}の まけんき！`); await applyStatChange(m, side, "atk", 2); }
+}
+
+const STATUS_IMMUNE = {
+  brn: (m) => m.types.includes("fire"),
+  par: (m) => m.types.includes("electric"),
+  psn: (m) => m.types.includes("poison") || m.types.includes("steel"),
+  frz: (m) => m.types.includes("ice"),
+  slp: () => false,
+};
+async function inflictStatus(m, side, st, quiet = false) {
+  if (m.hp <= 0 || m.status || STATUS_IMMUNE[st](m)) { if (!quiet) await say("しかし うまく きまらなかった！"); return false; }
+  m.status = st;
+  if (st === "slp") m.sleepTurns = 1 + Math.floor(Math.random() * 3);
+  sfx.status();
+  setHpBar(m, side);
+  const msg = { brn: "やけどを おった！", par: "まひして わざが でにくくなった！", psn: "どくを あびた！", slp: "ねむってしまった！", frz: "こおりついた！" };
+  await say(`${m.name}は ${msg[st]}`);
+  return true;
+}
+
+async function setWeather(kind, msg) {
+  if (battle.weather === kind) return false;
+  battle.weather = kind; battle.weatherTurns = 5;
+  updateWeatherUI();
+  await say(msg);
+  return true;
+}
+async function onSwitchIn(side) {
+  const m = monOf(side), foe = monOf(otherSide(side));
+  if (m.ability === "intimidate" && foe.hp > 0) {
+    await say(`${m.name}の いかく！`);
+    if (foe.ability === "innerfocus") await say(`${foe.name}は せいしんりょくで さがらない！`);
+    else await applyStatChange(foe, otherSide(side), "atk", -1, { fromOpponent: true });
+  }
+  if (m.ability === "drought") await setWeather("sun", "ひざしが つよくなった！");
+  if (m.ability === "drizzle") await setWeather("rain", "あめが ふりはじめた！");
+  if (m.ability === "sandstream") await setWeather("sand", "すなあらしが ふきはじめた！");
+}
+
+/* ===== メガシンカ ===== */
+function megaEligible(m, side) {
+  if (battle.megaUsed[side] || m.isMega || !m.item.startsWith("stone:")) return false;
+  return !!findMega(m.key, m.item.slice(6));
+}
+async function doMegaEvolve(m, side) {
+  const mega = findMega(m.key, m.item.slice(6));
+  battle.megaUsed[side] = true;
+  sfx.mega();
+  const w = $(side + "-wrap");
+  w.classList.add("mega-flash");
+  await wait(500);
+  const dmgTaken = m.maxHp - m.hp;
+  const s = calcStatsFromBase(mega.base, m.pts, m.nature);
+  m.maxHp = s.hp; m.hp = Math.max(1, s.hp - dmgTaken);
+  m.atk = s.atk; m.def = s.def; m.spa = s.spa; m.spd = s.spd; m.spe = s.spe;
+  m.types = [...mega.types]; m.baseTypes = [...mega.types];
+  m.ability = mega.ability;
+  if (mega.img) m.img = mega.img; else m.megaAura = true;
+  const old = m.name;
+  m.name = mega.name; m.isMega = true;
+  refreshSide(side, false);
+  await wait(500);
+  w.classList.remove("mega-flash");
+  await say(`${old}は ${mega.name}に メガシンカした！`);
+  await onSwitchIn(side);
+}
+
+/* ===== 行動前チェック（まひ1/8=チャンピオンズ仕様・ねむり・こおり・ひるみ） ===== */
+async function canAct(m) {
+  if (m.flinched) { m.flinched = false; await say(`${m.name}は ひるんで うごけない！`); return false; }
+  if (m.status === "slp") {
+    if (m.sleepTurns > 0) { m.sleepTurns--; await say(`${m.name}は ぐうぐう ねむっている…`); return false; }
+    m.status = null; setHpBar(m, m === activeP() ? "player" : "enemy");
+    await say(`${m.name}は めを さました！`);
+  }
+  if (m.status === "frz") {
+    if (Math.random() < .2) { m.status = null; setHpBar(m, m === activeP() ? "player" : "enemy"); await say(`${m.name}の こおりが とけた！`); }
+    else { await say(`${m.name}は こおって うごけない！`); return false; }
+  }
+  if (m.status === "par" && Math.random() < 1/8) { await say(`${m.name}は しびれて うごけない！`); return false; }
+  return true;
+}
+
+/* ===== わざ実行 ===== */
+async function useMove(attacker, defender, moveSlot, attackerSide) {
+  if (!(await canAct(attacker))) return null;
+  const move = effectiveMove(attacker, moveSlot.key);
+  moveSlot.pp--;
+  if (["choiceband","choicespecs","choicescarf"].includes(attacker.item)) attacker.choiceLock = moveSlot.key;
+  await say(`${attacker.name}の ${move.name}！`, { noWait: true });
+
+  if (attacker.ability === "protean" && move.cat !== "status" && !(attacker.types.length === 1 && attacker.types[0] === move.type)) {
+    attacker.types = [move.type];
+    await say(`${attacker.name}は ${TYPE_INFO[move.type].jp}タイプに なった！`, { noWait: true });
+  }
+
+  const noguard = attacker.ability === "noguard" || defender.ability === "noguard";
+  const perfectRain = move.rainPerfect && battle.weather === "rain";
+  if (move.acc !== null && !noguard && !perfectRain && Math.random() * 100 >= move.acc) { await say("しかし はずれた！"); return null; }
+
+  const defenderSide = otherSide(attackerSide);
+
+  // 変化技
+  if (move.cat === "status") {
+    if (move.weather) {
+      const msgs = { rain: "あめが ふりはじめた！", sun: "ひざしが つよくなった！", sand: "すなあらしが ふきはじめた！" };
+      if (!(await setWeather(move.weather, msgs[move.weather]))) await say("しかし うまく きまらなかった！");
+      return null;
+    }
+    if (move.inflict) {
+      if (defender.ability === "goodasgold") { await say(`${defender.name}の おうごんのからだで きかない！`); return null; }
+      if (move.inflict === "par" && typeMultiplier("electric", defender) === 0) { await say(`${defender.name}には こうかが ないようだ…`); return null; }
+      await inflictStatus(defender, defenderSide, move.inflict);
+      return defender.hp <= 0 ? "defender" : null;
+    }
+    return null;
+  }
+
+  const mult = typeMultiplier(move.type, defender);
+  if (mult === 0) { await say(`${defender.name}には こうかが ないようだ…`); return null; }
+
+  const critChance = move.alwaysCrit ? 1 : (move.highCrit ? 1/8 : 1/24);
+  const isCrit = Math.random() < critChance;
+  let dmg = calcDamage(attacker, defender, move, isCrit, attackerSide);
+
+  if (defender.ability === "disguise" && !defender.disguiseBusted) {
+    defender.disguiseBusted = true;
+    sfx.hit();
+    $(defenderSide + "-wrap").classList.add("flashing");
+    await wait(400);
+    $(defenderSide + "-wrap").classList.remove("flashing");
+    await say(`${defender.name}の ばけのかわが はがれた！`);
+    defender.hp = Math.max(0, defender.hp - Math.floor(defender.maxHp / 8));
+    setHpBar(defender, defenderSide);
+    if (defender.hp <= 0) { await faintOut(defender, defenderSide); return "defender"; }
+    return null;
+  }
+
+  let endured = null;
+  if (dmg >= defender.hp && defender.hp === defender.maxHp) {
+    if (defender.ability === "sturdy") { dmg = defender.hp - 1; endured = "sturdy"; }
+    else if (defender.item === "focussash" && !defender.itemUsed) { dmg = defender.hp - 1; defender.itemUsed = true; endured = "sash"; }
+  }
+
+  await animateHit($(defenderSide + "-wrap"), mult);
+  defender.hp = Math.max(0, defender.hp - dmg);
+  setHpBar(defender, defenderSide);
+  await wait(500);
+  if (isCrit) await say("きゅうしょに あたった！");
+  if (mult > 1) await say("こうかは ばつぐんだ！");
+  else if (mult < 1) await say("こうかは いまひとつの ようだ…");
+  if (endured === "sturdy") await say(`${defender.name}は がんじょうで もちこたえた！`);
+  if (endured === "sash") await say(`${defender.name}は きあいのタスキで もちこたえた！`);
+
+  // こおりはほのお技で解ける
+  if (defender.status === "frz" && move.type === "fire" && defender.hp > 0) {
+    defender.status = null; setHpBar(defender, defenderSide);
+    await say(`${defender.name}の こおりが とけた！`);
+  }
+
+  if (defender.hp <= 0) {
+    await faintOut(defender, defenderSide);
+    if (attacker.item === "lifeorb") {
+      attacker.hp = Math.max(0, attacker.hp - Math.max(1, Math.floor(attacker.maxHp / 10)));
+      setHpBar(attacker, attackerSide);
+      if (attacker.hp <= 0) { await faintOut(attacker, attackerSide); return "both"; }
+    }
+    return "defender";
+  }
+
+  if (mult > 1 && defender.item === "weaknesspolicy" && !defender.itemUsed) {
+    defender.itemUsed = true;
+    await say(`${defender.name}の じゃくてんほけんが はつどう！`);
+    await applyStatChange(defender, defenderSide, "atk", 2);
+    await applyStatChange(defender, defenderSide, "spa", 2);
+  }
+  if (move.type === "dark" && defender.ability === "justified") { await say(`${defender.name}の せいぎのこころ！`); await applyStatChange(defender, defenderSide, "atk", 1); }
+  if (defender.ability === "stamina") { await say(`${defender.name}の じきゅうりょく！`); await applyStatChange(defender, defenderSide, "def", 1); }
+
+  if (move.contact) {
+    if (defender.ability === "roughskin") {
+      attacker.hp = Math.max(0, attacker.hp - Math.max(1, Math.floor(attacker.maxHp / 8)));
+      setHpBar(attacker, attackerSide);
+      await say(`${attacker.name}は さめはだで きずついた！`);
+      if (attacker.hp <= 0) { await faintOut(attacker, attackerSide); return "attacker"; }
+    }
+    if (defender.ability === "static" && Math.random() < .3 && !attacker.status) {
+      await say(`${defender.name}の せいでんき！`);
+      await inflictStatus(attacker, attackerSide, "par", true);
+    }
+  }
+  if (move.recoil) {
+    attacker.hp = Math.max(0, attacker.hp - Math.max(1, Math.floor(dmg / 3)));
+    setHpBar(attacker, attackerSide);
+    await say(`${attacker.name}は はんどうで ダメージを うけた！`);
+    if (attacker.hp <= 0) { await faintOut(attacker, attackerSide); return "attacker"; }
+  }
+  if (attacker.item === "lifeorb") {
+    attacker.hp = Math.max(0, attacker.hp - Math.max(1, Math.floor(attacker.maxHp / 10)));
+    setHpBar(attacker, attackerSide);
+    if (attacker.hp <= 0) { await say(`${attacker.name}は いのちのたまで ちからつきた！`, { noWait: true }); await faintOut(attacker, attackerSide); return "attacker"; }
+  }
+  // 追加効果
+  if (move.sec) {
+    if (move.sec.status && Math.random() * 100 < move.sec.chance) await inflictStatus(defender, defenderSide, move.sec.status, true);
+    if (move.sec.flinch && !defender.actedThisTurn && Math.random() * 100 < move.sec.flinch && defender.ability !== "innerfocus") defender.flinched = true;
+  }
+  if (move.self) for (const [st, d] of Object.entries(move.self)) await applyStatChange(attacker, attackerSide, st, d);
+  if (move.target) for (const [st, d] of Object.entries(move.target)) await applyStatChange(defender, defenderSide, st, d, { fromOpponent: true });
+
+  await checkSitrus(defender, defenderSide);
+  await checkSitrus(attacker, attackerSide);
+  return null;
+}
+async function checkSitrus(m, side) {
+  if (m.item === "sitrusberry" && !m.itemUsed && m.hp > 0 && m.hp <= Math.floor(m.maxHp / 2)) {
+    m.itemUsed = true;
+    m.hp = Math.min(m.maxHp, m.hp + Math.floor(m.maxHp / 4));
+    setHpBar(m, side);
+    sfx.heal();
+    await say(`${m.name}は オボンのみで かいふくした！`);
+  }
+}
+
+/* ===== ターン終了 ===== */
+async function chip(m, side, frac, msg) {
+  m.hp = Math.max(0, m.hp - Math.max(1, Math.floor(m.maxHp * frac)));
+  setHpBar(m, side);
+  await say(msg, { noWait: true });
+  if (m.hp <= 0) { await faintOut(m, side); await handleFaint(side); return true; }
+  return false;
+}
+async function endOfTurn() {
+  for (const side of ["player","enemy"]) {
+    const m = monOf(side);
+    if (!m || m.hp <= 0 || battle.over) continue;
+    m.actedThisTurn = false;
+    if (battle.weather === "sand" && !m.types.some((t) => ["rock","ground","steel"].includes(t))) {
+      if (await chip(m, side, 1/16, `${m.name}は すなあらしで ダメージ！`)) continue;
+    }
+    if (battle.weather === "sun" && m.ability === "solarpower") {
+      if (await chip(m, side, 1/8, `${m.name}は サンパワーで HPが へった！`)) continue;
+    }
+    if (m.status === "brn") { if (await chip(m, side, 1/16, `${m.name}は やけどの ダメージ！`)) continue; }
+    if (m.status === "psn") { if (await chip(m, side, 1/8, `${m.name}は どくの ダメージ！`)) continue; }
+    if (m.item === "leftovers" && m.hp < m.maxHp) { m.hp = Math.min(m.maxHp, m.hp + Math.max(1, Math.floor(m.maxHp / 16))); setHpBar(m, side); }
+    if (m.item === "flameorb" && !m.status) { await inflictStatus(m, side, "brn", true); }
+  }
+  if (battle.weather && !battle.over) {
+    if (--battle.weatherTurns <= 0) {
+      const was = battle.weather;
+      battle.weather = null;
+      updateWeatherUI();
+      const msgs = { sun: "ひざしが もとに もどった。", sand: "すなあらしが おさまった。", rain: "あめが やんだ。" };
+      await say(msgs[was], { noWait: true });
+    }
+  }
+}
+
+/* ===== ひんし・交代 ===== */
+function showPartyModal(forced) {
+  return new Promise((resolve) => {
+    const modal = $("party-modal");
+    modal.innerHTML = "";
+    modal.classList.remove("hidden");
+    const panel = document.createElement("div");
+    panel.id = "party-panel";
+    panel.addEventListener("click", (e) => e.stopPropagation());
+    panel.innerHTML = `<h3>${forced ? "つぎの ポケモンを えらんでね！" : "どの ポケモンに こうたいする？"}</h3>`;
+    battle.playerParty.forEach((m, idx) => {
+      const row = document.createElement("div");
+      row.className = "party-row";
+      const dead = m.hp <= 0, act = idx === battle.pIdx;
+      if (dead || act) row.classList.add("disabled");
+      const pct = Math.max(0, m.hp / m.maxHp * 100);
+      row.innerHTML = `<img src="${spritePathByImg(m.img,false)}"><span class="pr-nm">${m.name}${act ? "(せんとうちゅう)" : ""}</span>
+        <span class="pr-hp"><span class="hp-bar-outer" style="display:block"><span class="hp-bar-inner ${pct<=20?"low":pct<=50?"mid":""}" style="display:block;width:${pct}%"></span></span></span>
+        <span class="pr-num">${Math.max(0,m.hp)}/${m.maxHp}</span>`;
+      if (!dead && !act) row.addEventListener("click", (e) => { e.stopPropagation(); sfx.send(); modal.classList.add("hidden"); resolve(idx); });
+      panel.appendChild(row);
+    });
+    if (!forced) {
+      const c = document.createElement("button");
+      c.id = "party-cancel"; c.className = "primary-btn"; c.textContent = "やめる";
+      c.addEventListener("click", (e) => { e.stopPropagation(); sfx.select(); modal.classList.add("hidden"); resolve(null); });
+      panel.appendChild(c);
+    }
+    modal.appendChild(panel);
+  });
+}
+function resetOnSwitch(m) { m.stages = {atk:0,def:0,spa:0,spd:0,spe:0}; m.choiceLock = null; m.types = [...m.baseTypes]; m.flinched = false; }
+function enemyChooseNext() {
+  const p = activeP();
+  let best = -1, bs = -1;
+  battle.enemyParty.forEach((m, idx) => {
+    if (m.hp <= 0) return;
+    const s = Math.max(...m.moves.map((sl) => {
+      const mv = effectiveMove(m, sl.key);
+      if (mv.cat === "status") return 10;
+      return mv.power * (m.types.includes(mv.type) ? 1.5 : 1) * typeMultiplier(mv.type, p);
+    })) * (.8 + Math.random() * .4);
+    if (s > bs) { bs = s; best = idx; }
+  });
+  return best;
+}
+async function handleFaint(side) {
+  const party = side === "player" ? battle.playerParty : battle.enemyParty;
+  if (party.every((m) => m.hp <= 0)) { battle.over = side === "player" ? "lose" : "win"; return; }
+  if (side === "enemy") {
+    battle.eIdx = enemyChooseNext();
+    resetOnSwitch(activeE());
+    await say(`あいては つぎに ${activeE().name}を くりだした！`);
+    sfx.send();
+    refreshSide("enemy");
+    await wait(550);
+    await onSwitchIn("enemy");
+  } else {
+    battle.pIdx = await showPartyModal(true);
+    resetOnSwitch(activeP());
+    await say(`いけっ！ ${activeP().name}！`, { noWait: true });
+    refreshSide("player");
+    await wait(550);
+    await onSwitchIn("player");
+  }
+}
+async function applyResult(result, attackerSide) {
+  if (!result) return false;
+  if (result === "both") { await handleFaint(otherSide(attackerSide)); if (!battle.over) await handleFaint(attackerSide); return true; }
+  await handleFaint(result === "defender" ? otherSide(attackerSide) : attackerSide);
+  return true;
+}
+
+/* ===== メニュー ===== */
+function showCmdMenu() {
+  return new Promise((resolve) => {
+    const menu = $("cmd-menu");
+    menu.innerHTML = "";
+    [["たたかう","fight"],["ポケモン","pokemon"],["どうぐ","item"],["こうさん","run"]].forEach(([l, v]) => {
+      const b = document.createElement("button");
+      b.className = "cmd-btn"; b.textContent = l;
+      b.addEventListener("click", (e) => { e.stopPropagation(); menu.classList.add("hidden"); sfx.select(); resolve(v); });
+      menu.appendChild(b);
+    });
+    menu.classList.remove("hidden");
+  });
+}
+function showMoveMenu(m, side) {
+  return new Promise((resolve) => {
+    const menu = $("move-menu");
+    let megaPlanned = false;
+    const render = () => {
+      menu.innerHTML = "";
+      const back = document.createElement("button");
+      back.className = "corner-back"; back.textContent = "◀ もどる";
+      back.addEventListener("click", (e) => { e.stopPropagation(); menu.classList.add("hidden"); sfx.select(); resolve(null); });
+      menu.appendChild(back);
+      if (megaEligible(m, side)) {
+        const mb = document.createElement("button");
+        mb.id = "mega-toggle";
+        mb.textContent = megaPlanned ? "★ メガシンカする！" : "☆ メガシンカ";
+        mb.style.opacity = megaPlanned ? "1" : ".75";
+        mb.addEventListener("click", (e) => { e.stopPropagation(); megaPlanned = !megaPlanned; sfx.select(); render(); });
+        menu.appendChild(mb);
+      }
+      m.moves.forEach((slot) => {
+        const mv = effectiveMove(m, slot.key);
+        const locked = m.choiceLock && m.choiceLock !== slot.key;
+        const vestBlock = m.item === "assaultvest" && mv.cat === "status";
+        const b = document.createElement("button");
+        b.className = "move-btn";
+        b.style.background = `linear-gradient(180deg, ${TYPE_INFO[mv.type].color}, ${TYPE_INFO[mv.type].color}cc)`;
+        b.innerHTML = `<span class="mv-name">${mv.name}</span>
+          <span class="mv-sub">${TYPE_INFO[mv.type].jp}/${mv.cat === "phys" ? "ぶつり" : mv.cat === "spec" ? "とくしゅ" : "へんか"} 威力${mv.power || "-"} PP${slot.pp}/${MOVES[slot.key].pp}</span>`;
+        if (slot.pp <= 0 || locked || vestBlock) b.disabled = true;
+        b.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (b.disabled) return;
+          menu.classList.add("hidden"); sfx.select();
+          resolve({ slot, mega: megaPlanned });
+        });
+        menu.appendChild(b);
+      });
+    };
+    render();
+    menu.classList.remove("hidden");
+  });
+}
+async function playerCommand() {
+  while (true) {
+    $("msg-text").textContent = `${activeP().name}は どうする？`;
+    const cmd = await showCmdMenu();
+    if (cmd === "fight") {
+      const sel = await showMoveMenu(activeP(), "player");
+      if (sel === null) continue;
+      return { kind: "fight", slot: sel.slot, mega: sel.mega };
+    }
+    if (cmd === "pokemon") {
+      const foe = activeE();
+      if (foe.ability === "shadowtag" && foe.hp > 0) { await say("かげふみで こうたいできない！"); continue; }
+      if (!battle.playerParty.some((m, i) => m.hp > 0 && i !== battle.pIdx)) { await say("こうたいできる ポケモンが いない！"); continue; }
+      const idx = await showPartyModal(false);
+      if (idx === null) continue;
+      return { kind: "switch", idx };
+    }
+    if (cmd === "item") {
+      if (battle.potions <= 0) { await say("どうぐを もっていない！"); continue; }
+      if (activeP().hp >= activeP().maxHp) { await say("HPは まんたんだ！"); continue; }
+      return { kind: "item" };
+    }
+    if (cmd === "run") return { kind: "run" };
+  }
+}
+function enemyChooseMove() {
+  const e = activeE(), p = activeP();
+  let usable = e.moves.filter((m) => m.pp > 0);
+  if (e.choiceLock) usable = usable.filter((m) => m.key === e.choiceLock);
+  if (usable.length === 0) return null;
+  const scored = usable.map((m) => {
+    const mv = effectiveMove(e, m.key);
+    let s;
+    if (mv.cat === "status") {
+      s = 30;
+      if (mv.inflict && !p.status) s = 60;
+      if (mv.weather && battle.weather !== mv.weather) s = 55;
+      if (mv.inflict && p.status) s = 1;
+      if (mv.weather && battle.weather === mv.weather) s = 1;
+    } else {
+      s = mv.power * (e.types.includes(mv.type) ? 1.5 : 1) * typeMultiplier(mv.type, p);
+    }
+    return { m, s: s * (.7 + Math.random() * .6) };
+  });
+  scored.sort((a, b) => b.s - a.s);
+  return scored[0].m;
+}
+
+/* ===== 1ターン ===== */
+async function battleTurn() {
+  const act = await playerCommand();
+  const p = activeP();
+  if (act.kind === "run") { await say("しょうぶを あきらめて にげだした…"); battle.over = "ran"; return; }
+  if (act.kind === "switch") {
+    battle.pIdx = act.idx;
+    resetOnSwitch(activeP());
+    await say(`もどれ！ いけっ！ ${activeP().name}！`, { noWait: true });
+    refreshSide("player");
+    await wait(550);
+    await onSwitchIn("player");
+    if (!battle.over) await enemyAct();
+    if (!battle.over) await endOfTurn();
+    return;
+  }
+  if (act.kind === "item") {
+    battle.potions--;
+    const heal = Math.min(100, p.maxHp - p.hp);
+    p.hp += heal;
+    setHpBar(p, "player");
+    sfx.heal();
+    await say(`かいふくのくすりを つかった！\nHPが ${heal} かいふくした！（のこり ${battle.potions}こ）`);
+    await enemyAct();
+    if (!battle.over) await endOfTurn();
+    return;
+  }
+  if (act.mega) await doMegaEvolve(activeP(), "player");
+  if (!battle.over && megaEligible(activeE(), "enemy")) await doMegaEvolve(activeE(), "enemy");
+  if (battle.over) return;
+
+  const eSlot = enemyChooseMove();
+  const pMove = MOVES[act.slot.key], eMove = eSlot ? MOVES[eSlot.key] : null;
+  let playerFirst = true;
+  if (eMove) {
+    const pP = pMove.prio || 0, eP = eMove.prio || 0;
+    if (pP !== eP) playerFirst = pP > eP;
+    else if (effSpe(activeP()) !== effSpe(activeE())) playerFirst = effSpe(activeP()) > effSpe(activeE());
+    else playerFirst = Math.random() < .5;
+  }
+  const order = playerFirst ? [["player", act.slot], ["enemy", eSlot]] : [["enemy", eSlot], ["player", act.slot]];
+  for (const [side, slot] of order) {
+    if (!slot) continue;
+    const atk = monOf(side), def = monOf(otherSide(side));
+    if (atk.hp <= 0) continue;
+    const result = await useMove(atk, def, slot, side);
+    atk.actedThisTurn = true;
+    if (await applyResult(result, side)) break;
+    if (battle.over) return;
+  }
+  if (!battle.over) await endOfTurn();
+}
+async function enemyAct() {
+  if (megaEligible(activeE(), "enemy")) await doMegaEvolve(activeE(), "enemy");
+  const em = enemyChooseMove();
+  if (em) await applyResult(await useMove(activeE(), activeP(), em, "enemy"), "enemy");
+}
+
+/* ===== バトル進行 ===== */
+function enemyPickThree() {
+  const scored = game.enemyTeam.map((entry) => {
+    const m = makeMon(entry);
+    let s = 0;
+    for (const key of game.team) {
+      const t = makeMon(game.builds[key]);
+      s += Math.max(...m.moves.map((sl) => {
+        const mv = effectiveMove(m, sl.key);
+        return mv.cat === "status" ? 20 : mv.power * (m.types.includes(mv.type) ? 1.5 : 1) * typeMultiplier(mv.type, t);
+      }));
+    }
+    return { entry, s: s * (.75 + Math.random() * .5) };
+  });
+  scored.sort((a, b) => b.s - a.s);
+  return scored.slice(0, 3).map((x) => makeMon(x.entry));
+}
+async function startBattle() {
+  battle.playerParty = game.playerPicks.map((i) => makeMon(game.builds[game.team[i]]));
+  battle.enemyParty = enemyPickThree();
+  battle.pIdx = 0; battle.eIdx = 0; battle.potions = 2; battle.over = false;
+  battle.weather = null; battle.weatherTurns = 0;
+  battle.megaUsed = {player:false,enemy:false};
+  battle.fainted = {player:0,enemy:0};
+  showScene("battle-scene");
+  updateWeatherUI();
+  Music.play("battle");
+  refreshSide("enemy");
+  refreshSide("player");
+  await say("ライバルが しょうぶを しかけてきた！");
+  await say(`あいては ${activeE().name}を くりだした！`);
+  await say(`ゆけっ！ ${activeP().name}！`);
+  await onSwitchIn("enemy");
+  await onSwitchIn("player");
+  while (!battle.over) await battleTurn();
+  if (battle.over === "win") {
+    Music.play("victory");
+    await say("ライバルとの しょうぶに かった！");
+    await say("おめでとう！ きみが チャンピオンだ！");
+  } else if (battle.over === "lose") {
+    Music.stop();
+    await say("ぜんいん たおれてしまった…\nめのまえが まっくらに なった！");
+  }
+  await say("タップで チームへんせいに もどるよ！");
+  Music.play("title");
+  buildTeamScene();
+  showScene("team-scene");
+}
+
+/* ===== 起動 ===== */
+function buildTitleParade() {
+  const p = $("title-parade");
+  p.innerHTML = "";
+  ["garchomp","mimikyu","charizard","raichu","greninja","dragonite","gengar"].forEach((k) => {
+    const img = document.createElement("img");
+    img.src = spritePath(k, false);
+    p.appendChild(img);
+  });
+}
+$("title-scene").addEventListener("click", () => {
+  sfx.select();
+  Music.play("title");
+  buildTeamScene();
+  showScene("team-scene");
+});
+loadBuilds();
+buildTitleParade();
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
