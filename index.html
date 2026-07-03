@@ -260,6 +260,19 @@
       <div class="sub">CHAMPIONS</div>
       <div id="title-parade"></div>
       <div class="press">▼ タップして スタート！</div>
+      <button id="net-btn" style="position:absolute;bottom:56px;left:50%;transform:translateX(-50%);z-index:5;background:linear-gradient(180deg,#8ad0ff,#3b7aff);color:#fff;border:2px solid #1b4a99;border-radius:12px;font-size:14px;font-weight:bold;padding:8px 20px;cursor:pointer">🌐 ともだちと つうしんたいせん</button>
+    </div>
+
+    <!-- 通信対戦ロビー -->
+    <div id="net-scene" class="scene panel-scene hidden">
+      <div class="scene-note" style="margin-top:60px;font-size:15px">🌐 つうしんたいせん</div>
+      <div style="text-align:center;font-size:12px;color:#9fc0ff;margin-bottom:20px">おたがいに この公開ページを ひらいてね（4G/べつのWi-FiでもOK）</div>
+      <div style="display:flex;flex-direction:column;gap:14px;padding:0 30px">
+        <button id="net-host" class="primary-btn">ルームを つくる</button>
+        <button id="net-join" class="primary-btn" style="background:linear-gradient(180deg,#8ad0ff,#3b7aff);color:#fff;border-color:#1b4a99">コードを いれて さんか</button>
+        <button id="net-back" class="tab-btn">◀ もどる</button>
+      </div>
+      <div id="net-status" style="text-align:center;margin-top:26px;font-size:15px;font-weight:bold;color:#ffd95e;line-height:2"></div>
     </div>
 
     <!-- ボックス（カスタマイズ） -->
@@ -321,12 +334,12 @@
       <div id="enemy-info" class="info-box">
         <div class="name-line"><span><span id="enemy-name">???</span><span id="enemy-status"></span></span><span class="lv">Lv.50</span></div>
         <div class="hp-row"><span class="hp-tag">HP</span><div class="hp-bar-outer"><div id="enemy-hp" class="hp-bar-inner" style="width:100%"></div></div></div>
-        <div class="sub-line"><span class="balls" id="enemy-balls"></span><span class="hp-num" id="enemy-hp-num"></span></div>
+        <div class="sub-line"><span class="balls" id="enemy-balls"></span><span id="enemy-stages" style="font-size:10px"></span><span class="hp-num" id="enemy-hp-num"></span></div>
       </div>
       <div id="player-info" class="info-box">
         <div class="name-line"><span><span id="player-name">???</span><span id="player-status"></span></span><span class="lv">Lv.50</span></div>
         <div class="hp-row"><span class="hp-tag">HP</span><div class="hp-bar-outer"><div id="player-hp" class="hp-bar-inner" style="width:100%"></div></div></div>
-        <div class="sub-line"><span class="balls" id="player-balls"></span><span class="hp-num" id="player-hp-num"></span></div>
+        <div class="sub-line"><span class="balls" id="player-balls"></span><span id="player-stages" style="font-size:10px"></span><span class="hp-num" id="player-hp-num"></span></div>
       </div>
       <div id="msg-box"><span id="msg-text"></span><span id="msg-arrow" class="hidden">▼</span></div>
       <div id="cmd-menu" class="hidden"></div>
@@ -338,6 +351,7 @@
 </div>
 
 <script src="pokedex-extra.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 "use strict";
 
@@ -497,6 +511,7 @@ const ABILITIES = {
   electricsurge:{name:"エレキメイカー",desc:"登場時エレキフィールド(電気1.3倍/ねむり無効)"},
   guts:{name:"こんじょう",desc:"状態異常で攻撃1.5倍/やけど半減無効"},
   magicbounce:{name:"マジックミラー",desc:"変化技をはねかえす"},
+  hugepower:{name:"ちからもち",desc:"こうげきの実数値が2倍になる"},
   unaware:{name:"てんねん",desc:"相手の能力ランク変化を無視する"},
   toxicdebris:{name:"どくげしょう",desc:"物理技を受けると相手の足元にどくびし"},
 };
@@ -881,7 +896,7 @@ async function say(text, { noWait = false } = {}) {
 }
 const typeBadge = (t) => `<span class="type-badge" style="background:${TYPE_INFO[t].color}">${TYPE_INFO[t].jp}</span>`;
 function showScene(id) {
-  ["title-scene","box-scene","team-scene","custom-scene","preview-scene","battle-scene"].forEach((s) => $(s).classList.toggle("hidden", s !== id));
+  ["title-scene","box-scene","team-scene","custom-scene","preview-scene","battle-scene","net-scene"].forEach((s) => $(s).classList.toggle("hidden", s !== id));
 }
 function fitScreen() {
   const s = Math.min((window.innerWidth) / 412, (window.innerHeight) / 860);
@@ -972,7 +987,13 @@ function buildTeamScene() {
     while (game.team.length < 6 && rest.length) game.team.push(rest.splice(Math.floor(Math.random()*rest.length),1)[0]);
     sfx.pick(); renderTeamState();
   };
-  $("team-go").onclick = (e) => { e.stopPropagation(); if (!$("team-go").disabled) { sfx.pick(); startPreview(); } };
+  $("team-go").onclick = (e) => {
+    e.stopPropagation();
+    if ($("team-go").disabled) return;
+    sfx.pick();
+    if (game.netPending) { showScene("net-scene"); netStatus(""); }
+    else startPreview();
+  };
   renderTeamState();
 }
 
@@ -1171,11 +1192,13 @@ function enemyAssignItems(team) {
 }
 
 /* ===== みせあい ===== */
-function startPreview() {
-  const cp = Object.keys(SPECIES);
-  game.enemyTeam = [];
-  while (game.enemyTeam.length < 6) game.enemyTeam.push(randomEnemyEntry(cp.splice(Math.floor(Math.random() * cp.length), 1)[0]));
-  enemyAssignItems(game.enemyTeam);
+function startPreview(netMode) {
+  if (!netMode) {
+    const cp = Object.keys(SPECIES);
+    game.enemyTeam = [];
+    while (game.enemyTeam.length < 6) game.enemyTeam.push(randomEnemyEntry(cp.splice(Math.floor(Math.random() * cp.length), 1)[0]));
+    enemyAssignItems(game.enemyTeam);
+  }
   game.playerPicks = [];
 
   const eRow = $("enemy-preview");
@@ -1217,17 +1240,114 @@ function renderPreviewPicks() {
   });
   $("preview-start").disabled = game.playerPicks.length !== 3;
 }
-$("preview-start").addEventListener("click", (e) => { e.stopPropagation(); if (game.playerPicks.length === 3) { sfx.send(); startBattle(); } });
+$("preview-start").addEventListener("click", async (e) => {
+  e.stopPropagation();
+  if (game.playerPicks.length !== 3) return;
+  sfx.send();
+  if (net.active) {
+    netSend("picks", game.playerPicks);
+    $("preview-start").disabled = true;
+    $("preview-start").textContent = "あいての せんしゅつを まってるよ…";
+    game.netEnemyPicks = await netWait("picks");
+    $("preview-start").textContent = "バトルスタート！";
+  }
+  startBattle();
+});
 
 /* ===== バトル計算 ===== */
 const battle = {
   playerParty: [], enemyParty: [], pIdx: 0, eIdx: 0,
-  potions: 2, over: false, weather: null, weatherTurns: 0,
+  potions: {player:2,enemy:2}, over: false, weather: null, weatherTurns: 0,
   terrain: null, terrainTurns: 0,
   hazards: { player: {rocks:false, toxicspikes:0}, enemy: {rocks:false, toxicspikes:0} },
   megaUsed: {player:false,enemy:false}, fainted: {player:0,enemy:0},
 };
 const isGrounded = (m) => !m.types.includes("flying");
+
+/* ===== 通信対戦（P2P・ロックステップ同期） ===== */
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const net = { active: false, isHost: false, peer: null, conn: null, inbox: {}, waiters: {}, rng: null };
+// バトル中の乱数（通信時はシード共有で両者同一）
+const battleRandom = () => (net.active && net.rng) ? net.rng() : Math.random();
+// ホスト側を先に処理する（両クライアントで同じ順序にするため）
+const hostLocalSide = () => (!net.active || net.isHost) ? "player" : "enemy";
+
+function netSend(type, data) { if (net.conn) net.conn.send({ type, data }); }
+function netWait(type) {
+  return new Promise((resolve) => {
+    if (net.inbox[type] && net.inbox[type].length) resolve(net.inbox[type].shift());
+    else (net.waiters[type] = net.waiters[type] || []).push(resolve);
+  });
+}
+function netRoute(msg) {
+  const { type, data } = msg;
+  if (net.waiters[type] && net.waiters[type].length) net.waiters[type].shift()(data);
+  else (net.inbox[type] = net.inbox[type] || []).push(data);
+}
+function netStatus(t) { $("net-status").innerHTML = t; }
+function netReset() {
+  net.active = false;
+  if (net.conn) { try { net.conn.close(); } catch (e) {} net.conn = null; }
+  if (net.peer) { try { net.peer.destroy(); } catch (e) {} net.peer = null; }
+  net.inbox = {}; net.waiters = {};
+}
+async function netOnConnected() {
+  netStatus("つながった！ チームこうかんちゅう…");
+  net.active = true;
+  net.conn.on("close", async () => {
+    if (net.active) {
+      net.active = false;
+      if (!battle.over) { battle.over = "ran"; }
+      alert("つうしんが きれちゃった…");
+      location.reload();
+    }
+  });
+  const myTeam = game.team.map((k) => game.builds[k]);
+  if (net.isHost) {
+    const seed = Math.floor(Math.random() * 2 ** 31);
+    netSend("hello", { seed, team: myTeam });
+    const theirs = await netWait("hello");
+    net.rng = mulberry32(seed);
+    game.enemyTeam = theirs.team;
+  } else {
+    const theirs = await netWait("hello");
+    netSend("hello", { seed: 0, team: myTeam });
+    net.rng = mulberry32(theirs.seed);
+    game.enemyTeam = theirs.team;
+  }
+  startPreview(true);
+}
+function netHost() {
+  netReset();
+  const code = String(1000 + Math.floor(Math.random() * 9000));
+  netStatus(`ルームコード: <span style="font-size:30px;color:#fff">${code}</span><br>あいてに このコードを おしえてね。<br>まってるよ…`);
+  net.isHost = true;
+  net.peer = new Peer("pkbtl-room-" + code);
+  net.peer.on("connection", (c) => { net.conn = c; c.on("data", netRoute); c.on("open", netOnConnected); });
+  net.peer.on("error", (e) => netStatus("エラー: " + e.type + "<br>もういちど ためしてね"));
+}
+function netJoin() {
+  const code = prompt("あいての ルームコード（4けた）は？");
+  if (!code) return;
+  netReset();
+  netStatus("せつぞくちゅう…");
+  net.isHost = false;
+  net.peer = new Peer();
+  net.peer.on("open", () => {
+    net.conn = net.peer.connect("pkbtl-room-" + code.trim());
+    net.conn.on("data", netRoute);
+    net.conn.on("open", netOnConnected);
+  });
+  net.peer.on("error", (e) => netStatus("みつからないよ… コードを たしかめてね (" + e.type + ")"));
+}
 const activeP = () => battle.playerParty[battle.pIdx];
 const activeE = () => battle.enemyParty[battle.eIdx];
 const monOf = (s) => s === "player" ? activeP() : activeE();
@@ -1248,6 +1368,7 @@ function effAtkStat(a, move, isCrit, side, ignoreStage) {
   let stage = ignoreStage ? 0 : a.stages[sn];
   if (isCrit && stage < 0) stage = 0;
   let v = a[sn] * stMul(stage);
+  if (a.ability === "hugepower" && sn === "atk") v *= 2;
   if (a.item === "choiceband" && sn === "atk") v *= 1.5;
   if (a.item === "choicespecs" && sn === "spa") v *= 1.5;
   if (a.ability === "solarpower" && battle.weather === "sun" && sn === "spa") v *= 1.5;
@@ -1282,7 +1403,7 @@ function calcDamage(a, d, move, isCrit, side) {
   const def = effDefStat(d, move, isCrit, a.ability === "unaware");
   let dmg = Math.floor(Math.floor(Math.floor(2 * LEVEL / 5 + 2) * move.power * atk / def) / 50) + 2;
   if (isCrit) dmg = Math.floor(dmg * 1.5);
-  dmg = Math.floor(dmg * (85 + Math.floor(Math.random() * 16)) / 100);
+  dmg = Math.floor(dmg * (85 + Math.floor(battleRandom() * 16)) / 100);
   if (a.types.includes(move.type)) dmg = Math.floor(dmg * (a.ability === "adaptability" ? 2 : 1.5));
   dmg = Math.floor(dmg * typeMultiplier(move.type, d));
   if (battle.weather === "sun") { if (move.type === "fire") dmg = Math.floor(dmg * 1.5); if (move.type === "water") dmg = Math.floor(dmg * .5); }
@@ -1312,6 +1433,12 @@ function setHpBar(m, side) {
   $(side + "-hp-num").textContent = `${Math.max(0, m.hp)} / ${m.maxHp}`;
   const st = $(side + "-status");
   st.innerHTML = m.status ? `<span class="st-badge" style="background:${STATUS_INFO[m.status].color}">${STATUS_INFO[m.status].jp}</span>` : "";
+  // ランク変化の常時表示（例: 攻+2 素-1）
+  const SHORT = { atk: "攻", def: "防", spa: "特攻", spd: "特防", spe: "素" };
+  const stages = Object.entries(m.stages).filter(([, v]) => v !== 0)
+    .map(([k, v]) => `<span style="color:${v > 0 ? "#1e8a1e" : "#c33"};font-weight:bold">${SHORT[k]}${v > 0 ? "+" : ""}${v}</span>`).join(" ");
+  const line = $(side + "-stages");
+  if (line) line.innerHTML = stages;
 }
 function updateBalls() {
   const html = (p) => p.map((m) => `<span class="${m.hp > 0 ? "alive" : "dead"}">●</span>`).join("");
@@ -1364,6 +1491,7 @@ async function applyStatChange(m, side, stat, delta, { fromOpponent = false } = 
   m.stages[stat] = Math.max(-6, Math.min(6, before + delta));
   if (m.stages[stat] === before) return;
   (delta > 0 ? sfx.statup : sfx.statdn)();
+  setHpBar(m, side);   // ランク表示の更新
   const w = delta >= 2 ? "ぐーんと あがった" : delta === 1 ? "あがった" : delta === -1 ? "さがった" : "がくっと さがった";
   await say(`${m.name}の ${STAT_JP[stat]}が ${w}！`);
   if (delta < 0 && fromOpponent && m.ability === "defiant") { await say(`${m.name}の まけんき！`); await applyStatChange(m, side, "atk", 2); }
@@ -1379,7 +1507,7 @@ const STATUS_IMMUNE = {
 async function inflictStatus(m, side, st, quiet = false) {
   if (m.hp <= 0 || m.status || STATUS_IMMUNE[st](m)) { if (!quiet) await say("しかし うまく きまらなかった！"); return false; }
   m.status = st;
-  if (st === "slp") m.sleepTurns = 1 + Math.floor(Math.random() * 3);
+  if (st === "slp") m.sleepTurns = 1 + Math.floor(battleRandom() * 3);
   sfx.status();
   setHpBar(m, side);
   const msg = { brn: "やけどを おった！", par: "まひして わざが でにくくなった！", psn: "どくを あびた！", slp: "ねむってしまった！", frz: "こおりついた！" };
@@ -1476,10 +1604,10 @@ async function canAct(m) {
     await say(`${m.name}は めを さました！`);
   }
   if (m.status === "frz") {
-    if (Math.random() < .2) { m.status = null; setHpBar(m, m === activeP() ? "player" : "enemy"); await say(`${m.name}の こおりが とけた！`); }
+    if (battleRandom() < .2) { m.status = null; setHpBar(m, m === activeP() ? "player" : "enemy"); await say(`${m.name}の こおりが とけた！`); }
     else { await say(`${m.name}は こおって うごけない！`); return false; }
   }
-  if (m.status === "par" && Math.random() < 1/8) { await say(`${m.name}は しびれて うごけない！`); return false; }
+  if (m.status === "par" && battleRandom() < 1/8) { await say(`${m.name}は しびれて うごけない！`); return false; }
   return true;
 }
 
@@ -1499,7 +1627,7 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
 
   const noguard = attacker.ability === "noguard" || defender.ability === "noguard";
   const perfectRain = move.rainPerfect && battle.weather === "rain";
-  if (move.acc !== null && !noguard && !perfectRain && Math.random() * 100 >= move.acc) { await say("しかし はずれた！"); return null; }
+  if (move.acc !== null && !noguard && !perfectRain && battleRandom() * 100 >= move.acc) { await say("しかし はずれた！"); return null; }
 
   const defenderSide = otherSide(attackerSide);
 
@@ -1558,7 +1686,7 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
       const party = tgtSide === "player" ? battle.playerParty : battle.enemyParty;
       const idxs = party.map((x, i) => ({ x, i })).filter(({ x, i }) => x.hp > 0 && i !== (tgtSide === "player" ? battle.pIdx : battle.eIdx));
       if (!idxs.length) { await say("しかし うまく きまらなかった！"); return null; }
-      const next = idxs[Math.floor(Math.random() * idxs.length)].i;
+      const next = idxs[Math.floor(battleRandom() * idxs.length)].i;
       await say(`${tgt.name}は ふきとばされた！`);
       if (tgtSide === "player") battle.pIdx = next; else battle.eIdx = next;
       resetOnSwitch(monOf(tgtSide));
@@ -1579,7 +1707,7 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
   if (mult === 0) { await say(`${defender.name}には こうかが ないようだ…`); return null; }
 
   const critChance = move.alwaysCrit ? 1 : (move.highCrit ? 1/8 : 1/24);
-  const isCrit = Math.random() < critChance;
+  const isCrit = battleRandom() < critChance;
   let dmg = calcDamage(attacker, defender, move, isCrit, attackerSide);
 
   if (defender.ability === "disguise" && !defender.disguiseBusted) {
@@ -1648,7 +1776,7 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
       await say(`${attacker.name}は さめはだで きずついた！`);
       if (attacker.hp <= 0) { await faintOut(attacker, attackerSide); return "attacker"; }
     }
-    if (defender.ability === "static" && Math.random() < .3 && !attacker.status) {
+    if (defender.ability === "static" && battleRandom() < .3 && !attacker.status) {
       await say(`${defender.name}の せいでんき！`);
       await inflictStatus(attacker, attackerSide, "par", true);
     }
@@ -1666,8 +1794,8 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
   }
   // 追加効果
   if (move.sec) {
-    if (move.sec.status && Math.random() * 100 < move.sec.chance) await inflictStatus(defender, defenderSide, move.sec.status, true);
-    if (move.sec.flinch && !defender.actedThisTurn && Math.random() * 100 < move.sec.flinch && defender.ability !== "innerfocus") defender.flinched = true;
+    if (move.sec.status && battleRandom() * 100 < move.sec.chance) await inflictStatus(defender, defenderSide, move.sec.status, true);
+    if (move.sec.flinch && !defender.actedThisTurn && battleRandom() * 100 < move.sec.flinch && defender.ability !== "innerfocus") defender.flinched = true;
   }
   if (move.self) for (const [st, d] of Object.entries(move.self)) await applyStatChange(attacker, attackerSide, st, d);
   if (move.target) for (const [st, d] of Object.entries(move.target)) await applyStatChange(defender, defenderSide, st, d, { fromOpponent: true });
@@ -1695,7 +1823,7 @@ async function chip(m, side, frac, msg) {
   return false;
 }
 async function endOfTurn() {
-  for (const side of ["player","enemy"]) {
+  for (const side of [hostLocalSide(), otherSide(hostLocalSide())]) {
     const m = monOf(side);
     if (!m || m.hp <= 0 || battle.over) continue;
     m.actedThisTurn = false;
@@ -1789,7 +1917,12 @@ async function handleFaint(side) {
   const party = side === "player" ? battle.playerParty : battle.enemyParty;
   if (party.every((m) => m.hp <= 0)) { battle.over = side === "player" ? "lose" : "win"; return; }
   if (side === "enemy") {
-    battle.eIdx = enemyChooseNext();
+    if (net.active) {
+      $("msg-text").textContent = "あいての つぎのポケモンを まってるよ…";
+      battle.eIdx = await netWait("replace");
+    } else {
+      battle.eIdx = enemyChooseNext();
+    }
     resetOnSwitch(activeE());
     await say(`あいては つぎに ${activeE().name}を くりだした！`);
     sfx.send();
@@ -1798,6 +1931,7 @@ async function handleFaint(side) {
     await onSwitchIn("enemy");
   } else {
     battle.pIdx = await showPartyModal(true);
+    if (net.active) netSend("replace", battle.pIdx);
     resetOnSwitch(activeP());
     await say(`いけっ！ ${activeP().name}！`, { noWait: true });
     refreshSide("player");
@@ -1844,14 +1978,23 @@ function showMoveMenu(m, side) {
         mb.addEventListener("click", (e) => { e.stopPropagation(); megaPlanned = !megaPlanned; sfx.select(); render(); });
         menu.appendChild(mb);
       }
+      const foe = monOf(otherSide(side));
       m.moves.forEach((slot) => {
         const mv = effectiveMove(m, slot.key);
         const locked = (m.choiceLock && m.choiceLock !== slot.key) || (m.encore && m.encore.moveKey !== slot.key);
         const vestBlock = m.item === "assaultvest" && mv.cat === "status";
+        // 相手への相性を事前表示
+        let eff = "";
+        if (mv.cat !== "status" && foe && foe.hp > 0) {
+          const mult = typeMultiplier(mv.type, foe);
+          if (mult === 0) eff = ` <b style="color:#bbb">✕こうかなし</b>`;
+          else if (mult >= 2) eff = ` <b style="color:#ffe97d">◎ばつぐん</b>`;
+          else if (mult < 1) eff = ` <b style="color:#9fc0ff">△いまひとつ</b>`;
+        }
         const b = document.createElement("button");
         b.className = "move-btn";
         b.style.background = `linear-gradient(180deg, ${TYPE_INFO[mv.type].color}, ${TYPE_INFO[mv.type].color}cc)`;
-        b.innerHTML = `<span class="mv-name">${mv.name}</span>
+        b.innerHTML = `<span class="mv-name">${mv.name}${eff}</span>
           <span class="mv-sub">${TYPE_INFO[mv.type].jp}/${mv.cat === "phys" ? "ぶつり" : mv.cat === "spec" ? "とくしゅ" : "へんか"} 威力${mv.power || "-"} PP${slot.pp}/${MOVES[slot.key].pp}</span>`;
         if (slot.pp <= 0 || locked || vestBlock) b.disabled = true;
         b.addEventListener("click", (e) => {
@@ -1885,7 +2028,7 @@ async function playerCommand() {
       return { kind: "switch", idx };
     }
     if (cmd === "item") {
-      if (battle.potions <= 0) { await say("どうぐを もっていない！"); continue; }
+      if (battle.potions.player <= 0) { await say("どうぐを もっていない！"); continue; }
       if (activeP().hp >= activeP().maxHp) { await say("HPは まんたんだ！"); continue; }
       return { kind: "item" };
     }
@@ -1923,62 +2066,89 @@ function enemyChooseMove() {
   return scored[0].m;
 }
 
-/* ===== 1ターン ===== */
+/* ===== 1ターン（両者同時選択→解決。通信対戦はロックステップ同期） ===== */
+function serializeAct(a) {
+  return { kind: a.kind, idx: a.idx, mega: !!a.mega, moveKey: a.slot ? a.slot.key : null };
+}
+function deserializeAct(d, mon) {
+  const a = { kind: d.kind, idx: d.idx, mega: d.mega };
+  if (d.moveKey) a.slot = mon.moves.find((s) => s.key === d.moveKey);
+  return a;
+}
+async function collectFoeAction() {
+  if (net.active) {
+    $("msg-text").textContent = "あいての こうどうを まってるよ…";
+    return deserializeAct(await netWait("action"), activeE());
+  }
+  const em = enemyChooseMove();
+  if (!em) return { kind: "pass" };
+  return { kind: "fight", slot: em, mega: megaEligible(activeE(), "enemy") };
+}
 async function battleTurn() {
-  const act = await playerCommand();
-  const p = activeP();
-  if (act.kind === "run") { await say("しょうぶを あきらめて にげだした…"); battle.over = "ran"; return; }
-  if (act.kind === "switch") {
-    battle.pIdx = act.idx;
-    resetOnSwitch(activeP());
-    await say(`もどれ！ いけっ！ ${activeP().name}！`, { noWait: true });
-    refreshSide("player");
-    await wait(550);
-    await onSwitchIn("player");
-    if (!battle.over) await enemyAct();
-    if (!battle.over) await endOfTurn();
-    return;
-  }
-  if (act.kind === "item") {
-    battle.potions--;
-    const heal = Math.min(100, p.maxHp - p.hp);
-    p.hp += heal;
-    setHpBar(p, "player");
-    sfx.heal();
-    await say(`かいふくのくすりを つかった！\nHPが ${heal} かいふくした！（のこり ${battle.potions}こ）`);
-    await enemyAct();
-    if (!battle.over) await endOfTurn();
-    return;
-  }
-  if (act.mega) await doMegaEvolve(activeP(), "player");
-  if (!battle.over && megaEligible(activeE(), "enemy")) await doMegaEvolve(activeE(), "enemy");
-  if (battle.over) return;
+  const myAct = await playerCommand();
+  if (net.active) netSend("action", serializeAct(myAct));
+  const foeAct = await collectFoeAction();
+  const acts = { player: myAct, enemy: foeAct };
+  const first = hostLocalSide(), second = otherSide(first);
 
-  const eSlot = enemyChooseMove();
-  const pMove = MOVES[act.slot.key], eMove = eSlot ? MOVES[eSlot.key] : null;
-  let playerFirst = true;
-  if (eMove) {
-    const pP = pMove.prio || 0, eP = eMove.prio || 0;
-    if (pP !== eP) playerFirst = pP > eP;
-    else if (effSpe(activeP()) !== effSpe(activeE())) playerFirst = effSpe(activeP()) > effSpe(activeE());
-    else playerFirst = Math.random() < .5;
+  // にげる／こうさん
+  for (const side of [first, second]) {
+    if (acts[side].kind === "run") {
+      if (side === "player") { await say("しょうぶを あきらめて にげだした…"); battle.over = "ran"; }
+      else { await say("あいては しょうぶを あきらめた！"); battle.over = "win"; }
+      return;
+    }
   }
-  const order = playerFirst ? [["player", act.slot], ["enemy", eSlot]] : [["enemy", eSlot], ["player", act.slot]];
-  for (const [side, slot] of order) {
-    if (!slot) continue;
+  // こうたい（ホスト側から）
+  for (const side of [first, second]) {
+    if (acts[side].kind !== "switch") continue;
+    if (side === "player") battle.pIdx = acts[side].idx; else battle.eIdx = acts[side].idx;
+    resetOnSwitch(monOf(side));
+    await say(side === "player" ? `もどれ！ いけっ！ ${activeP().name}！` : `あいては ${activeE().name}に こうたいした！`, { noWait: true });
+    refreshSide(side);
+    await wait(550);
+    await onSwitchIn(side);
+    if (battle.over) return;
+  }
+  // どうぐ
+  for (const side of [first, second]) {
+    if (acts[side].kind !== "item") continue;
+    const m = monOf(side);
+    battle.potions[side]--;
+    const heal = Math.min(100, m.maxHp - m.hp);
+    m.hp += heal;
+    setHpBar(m, side);
+    sfx.heal();
+    await say(`${side === "player" ? "" : "あいては "}かいふくのくすりを つかった！\n${m.name}の HPが ${heal} かいふくした！`);
+  }
+  // メガシンカ（ホスト側から）
+  for (const side of [first, second]) {
+    if (acts[side].kind === "fight" && acts[side].mega && megaEligible(monOf(side), side)) {
+      await doMegaEvolve(monOf(side), side);
+      if (battle.over) return;
+    }
+  }
+  // わざ（優先度→素早さ→同速は共有乱数）
+  const fights = [first, second].filter((s) => acts[s].kind === "fight" && acts[s].slot && monOf(s).hp > 0);
+  let order = fights;
+  if (fights.length === 2) {
+    const [a, b] = fights;
+    const pa = MOVES[acts[a].slot.key].prio || 0, pb = MOVES[acts[b].slot.key].prio || 0;
+    let aFirst;
+    if (pa !== pb) aFirst = pa > pb;
+    else if (effSpe(monOf(a)) !== effSpe(monOf(b))) aFirst = effSpe(monOf(a)) > effSpe(monOf(b));
+    else aFirst = battleRandom() < .5;
+    order = aFirst ? [a, b] : [b, a];
+  }
+  for (const side of order) {
     const atk = monOf(side), def = monOf(otherSide(side));
     if (atk.hp <= 0) continue;
-    const result = await useMove(atk, def, slot, side);
+    const result = await useMove(atk, def, acts[side].slot, side);
     atk.actedThisTurn = true;
     if (await applyResult(result, side)) break;
     if (battle.over) return;
   }
   if (!battle.over) await endOfTurn();
-}
-async function enemyAct() {
-  if (megaEligible(activeE(), "enemy")) await doMegaEvolve(activeE(), "enemy");
-  const em = enemyChooseMove();
-  if (em) await applyResult(await useMove(activeE(), activeP(), em, "enemy"), "enemy");
 }
 
 /* ===== バトル進行 ===== */
@@ -2000,8 +2170,10 @@ function enemyPickThree() {
 }
 async function startBattle() {
   battle.playerParty = game.playerPicks.map((i) => makeMon(game.builds[game.team[i]]));
-  battle.enemyParty = enemyPickThree();
-  battle.pIdx = 0; battle.eIdx = 0; battle.potions = 2; battle.over = false;
+  battle.enemyParty = net.active
+    ? game.netEnemyPicks.map((i) => makeMon(game.enemyTeam[i]))
+    : enemyPickThree();
+  battle.pIdx = 0; battle.eIdx = 0; battle.potions = {player:2,enemy:2}; battle.over = false;
   battle.weather = null; battle.weatherTurns = 0;
   battle.terrain = null; battle.terrainTurns = 0;
   battle.hazards = { player: {rocks:false, toxicspikes:0}, enemy: {rocks:false, toxicspikes:0} };
@@ -2027,8 +2199,10 @@ async function startBattle() {
     await say("ぜんいん たおれてしまった…\nめのまえが まっくらに なった！");
   }
   await say("タップで チームへんせいに もどるよ！");
+  if (net.active) { netReset(); game.netPending = false; }
   Music.play("title");
   buildTeamScene();
+  $("team-go").textContent = "みせあいへ ▶";
   showScene("team-scene");
 }
 
@@ -2045,9 +2219,22 @@ function buildTitleParade() {
 $("title-scene").addEventListener("click", () => {
   sfx.select();
   Music.play("title");
+  game.netPending = false;
   buildTeamScene();
   showScene("team-scene");
 });
+$("net-btn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  sfx.pick();
+  Music.play("title");
+  game.netPending = true;
+  buildTeamScene();
+  showScene("team-scene");
+  $("team-go").textContent = "つうしんロビーへ ▶";
+});
+$("net-host").addEventListener("click", (e) => { e.stopPropagation(); sfx.pick(); netHost(); });
+$("net-join").addEventListener("click", (e) => { e.stopPropagation(); sfx.pick(); netJoin(); });
+$("net-back").addEventListener("click", (e) => { e.stopPropagation(); sfx.unpick(); netReset(); showScene("team-scene"); });
 loadBuilds();
 buildTitleParade();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
