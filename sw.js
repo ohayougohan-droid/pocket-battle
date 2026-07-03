@@ -1,5 +1,5 @@
 // ポケットバトル CHAMPIONS - オフラインキャッシュ
-const CACHE = "pocketbattle-v6";
+const CACHE = "pocketbattle-v7";
 const CORE = ["./index.html", "./manifest.json"];
 
 self.addEventListener("install", (e) => {

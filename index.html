@@ -337,6 +337,7 @@
   </div>
 </div>
 
+<script src="pokedex-extra.js"></script>
 <script>
 "use strict";
 
@@ -615,6 +616,10 @@ const SPECIES = {
     megas:[{id:"raichuMegaX",name:"メガライチュウX",stone:"ライチュウナイトX",base:[60,135,95,90,95,110],types:["electric"],ability:"electricsurge",img:null},
            {id:"raichuMegaY",name:"メガライチュウY",stone:"ライチュウナイトY",base:[60,100,55,160,80,130],types:["electric"],ability:"noguard",img:null}]},
 };
+
+// PokeAPI自動生成の追加ポケモン・とくせいをマージ
+if (window.EXTRA_ABILITIES) Object.assign(ABILITIES, window.EXTRA_ABILITIES);
+if (window.EXTRA_SPECIES) Object.assign(SPECIES, window.EXTRA_SPECIES);
 
 const spritePathByImg = (img, back) => `sprites/${img}${back ? "-back" : ""}.gif`;
 const spritePath = (key, back) => spritePathByImg(SPECIES[key].img, back);
