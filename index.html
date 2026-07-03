@@ -444,6 +444,13 @@ const MOVES = {
   icebeam:{name:"れいとうビーム",type:"ice",cat:"spec",power:90,pp:10,acc:100,sec:{status:"frz",chance:10}},
   watershuriken:{name:"みずしゅりけん",type:"water",cat:"spec",power:45,pp:20,acc:100,prio:1},
 
+  swordsdance:{name:"つるぎのまい",type:"normal",cat:"status",pp:20,acc:null,selfBoost:{atk:2}},
+  nastyplot:{name:"わるだくみ",type:"dark",cat:"status",pp:20,acc:null,selfBoost:{spa:2}},
+  stealthrock:{name:"ステルスロック",type:"rock",cat:"status",pp:20,acc:null,hazard:"rocks"},
+  yawn:{name:"あくび",type:"normal",cat:"status",pp:10,acc:null,yawn:true},
+  roar:{name:"ほえる",type:"normal",cat:"status",pp:20,acc:null,roar:true,prio:-6},
+  roost:{name:"はねやすめ",type:"flying",cat:"status",pp:10,acc:null,roost:true},
+  encore:{name:"アンコール",type:"normal",cat:"status",pp:5,acc:100,encore:true},
   willowisp:{name:"おにび",type:"fire",cat:"status",pp:15,acc:85,inflict:"brn"},
   thunderwave:{name:"でんじは",type:"electric",cat:"status",pp:20,acc:90,inflict:"par"},
   raindance:{name:"あまごい",type:"water",cat:"status",pp:5,acc:null,weather:"rain"},
@@ -486,8 +493,11 @@ const ABILITIES = {
   static:{name:"せいでんき",desc:"接触されると30%でまひ"},
   noguard:{name:"ノーガード",desc:"お互いの技が必ず当たる"},
   contrary:{name:"あまのじゃく",desc:"能力変化が逆になる"},
-  electricsurge:{name:"エレキメイカー",desc:"(エレキフィールド未実装)"},
+  electricsurge:{name:"エレキメイカー",desc:"登場時エレキフィールド(電気1.3倍/ねむり無効)"},
   guts:{name:"こんじょう",desc:"状態異常で攻撃1.5倍/やけど半減無効"},
+  magicbounce:{name:"マジックミラー",desc:"変化技をはねかえす"},
+  unaware:{name:"てんねん",desc:"相手の能力ランク変化を無視する"},
+  toxicdebris:{name:"どくげしょう",desc:"物理技を受けると相手の足元にどくびし"},
 };
 
 /* ===== もちもの ===== */
@@ -531,14 +541,14 @@ const STATUS_INFO = {
 /* ===== 図鑑（21体） ===== */
 const SPECIES = {
   garchomp:{name:"ガブリアス",types:["dragon","ground"],base:[108,130,95,80,85,102],abilities:["roughskin"],
-    pool:["earthquake","dragonclaw","outrage","stoneedge","firefang","crunch","ironhead","fireblast"],
+    pool:["earthquake","dragonclaw","outrage","stoneedge","firefang","crunch","ironhead","fireblast","swordsdance","stealthrock"],
     defPts:{atk:32,spe:32,hp:2},defItem:"lifeorb",defNature:"jolly",img:"garchomp",
     megas:[{id:"garchompMega",name:"メガガブリアス",stone:"ガブリアスナイト",base:[108,170,115,120,95,92],types:["dragon","ground"],ability:"sandforce",img:"garchomp-mega"}]},
   mimikyu:{name:"ミミッキュ",types:["ghost","fairy"],base:[55,90,80,50,105,96],abilities:["disguise"],
-    pool:["playrough","shadowclaw","shadowsneak","woodhammer","thunderbolt","shadowball"],
+    pool:["playrough","shadowclaw","shadowsneak","woodhammer","thunderbolt","shadowball","swordsdance"],
     defPts:{atk:32,spe:32,hp:2},defItem:"lifeorb",defNature:"jolly",img:"mimikyu"},
   charizard:{name:"リザードン",types:["fire","flying"],base:[78,84,78,109,85,100],abilities:["blaze","solarpower"],
-    pool:["flamethrower","fireblast","airslash","dragonclaw","dragonpulse","earthquake","flareblitz","sunnyday"],
+    pool:["flamethrower","fireblast","airslash","dragonclaw","dragonpulse","earthquake","flareblitz","sunnyday","roost"],
     defPts:{spa:32,spe:32,hp:2},defItem:"stone:charizardMegaY",defNature:"timid",img:"charizard",
     megas:[{id:"charizardMegaX",name:"メガリザードンX",stone:"リザードナイトX",base:[78,130,111,130,85,100],types:["fire","dragon"],ability:"toughclaws",img:"charizard-megax"},
            {id:"charizardMegaY",name:"メガリザードンY",stone:"リザードナイトY",base:[78,104,78,159,115,100],types:["fire","flying"],ability:"drought",img:"charizard-megay"}]},
@@ -553,34 +563,34 @@ const SPECIES = {
     pool:["flashcannon","dracometeor","thunderbolt","focusblast","dragonpulse","bodypress"],
     defPts:{spa:32,hp:32,def:2},defItem:"leftovers",defNature:"modest",img:"archaludon"},
   incineroar:{name:"ガオガエン",types:["fire","dark"],base:[95,115,90,80,90,60],abilities:["intimidate","blaze"],
-    pool:["flareblitz","darklariat","crosschop","earthquake","knockoff","flamethrower","willowisp"],
+    pool:["flareblitz","darklariat","crosschop","earthquake","knockoff","flamethrower","willowisp","roar"],
     defPts:{atk:32,hp:32,spd:2},defItem:"sitrusberry",defNature:"adamant",img:"incineroar"},
   gholdengo:{name:"サーフゴー",types:["steel","ghost"],base:[87,60,95,133,91,84],abilities:["goodasgold"],
-    pool:["makeitrain","shadowball","thunderbolt","focusblast","psyshock","powergem"],
+    pool:["makeitrain","shadowball","thunderbolt","focusblast","psyshock","powergem","nastyplot"],
     defPts:{spa:32,spe:32,hp:2},defItem:"choicespecs",defNature:"modest",img:"gholdengo"},
   sylveon:{name:"ニンフィア",types:["fairy"],base:[95,65,65,110,130,60],abilities:["pixilate"],
     pool:["hypervoice","moonblast","shadowball","psyshock","magicalflame","quickattack"],
     defPts:{spa:32,hp:32,def:2},defItem:"choicespecs",defNature:"modest",img:"sylveon"},
   kingambit:{name:"ドドゲザン",types:["dark","steel"],base:[100,135,120,60,85,50],abilities:["supremeoverlord","defiant"],
-    pool:["kowtowcleave","ironhead","suckerpunch","stoneedge","nightslash","brickbreak"],
+    pool:["kowtowcleave","ironhead","suckerpunch","stoneedge","nightslash","brickbreak","swordsdance"],
     defPts:{atk:32,hp:32,spd:2},defItem:"leftovers",defNature:"adamant",img:"kingambit"},
   dragonite:{name:"カイリュー",types:["dragon","flying"],base:[91,134,95,100,100,80],abilities:["multiscale","innerfocus"],
-    pool:["outrage","extremespeed","earthquake","ironhead","firepunch","dracometeor","bodyslam"],
+    pool:["outrage","extremespeed","earthquake","ironhead","firepunch","dracometeor","bodyslam","roost","swordsdance"],
     defPts:{atk:32,hp:32,spd:2},defItem:"choiceband",defNature:"adamant",img:"dragonite"},
   gengar:{name:"ゲンガー",types:["ghost","poison"],base:[60,65,60,130,75,110],abilities:["cursedbody"],
-    pool:["shadowball","sludgebomb","thunderbolt","focusblast","psychic","dazzlinggleam","willowisp","thunderwave"],
+    pool:["shadowball","sludgebomb","thunderbolt","focusblast","psychic","dazzlinggleam","willowisp","thunderwave","nastyplot","encore"],
     defPts:{spa:32,spe:32,hp:2},defItem:"stone:gengarMega",defNature:"timid",img:"gengar",
     megas:[{id:"gengarMega",name:"メガゲンガー",stone:"ゲンガナイト",base:[60,65,80,170,95,130],types:["ghost","poison"],ability:"shadowtag",img:"gengar-mega"}]},
   lucario:{name:"ルカリオ",types:["fighting","steel"],base:[70,110,70,115,70,90],abilities:["justified","innerfocus"],
-    pool:["closecombat","aurasphere","flashcannon","extremespeed","shadowball","stoneedge","meteormash"],
+    pool:["closecombat","aurasphere","flashcannon","extremespeed","shadowball","stoneedge","meteormash","swordsdance","nastyplot"],
     defPts:{atk:32,spe:32,hp:2},defItem:"stone:lucarioMega",defNature:"jolly",img:"lucario",
     megas:[{id:"lucarioMega",name:"メガルカリオ",stone:"ルカリオナイト",base:[70,145,88,140,70,112],types:["fighting","steel"],ability:"adaptability",img:"lucario-mega"}]},
   tyranitar:{name:"バンギラス",types:["rock","dark"],base:[100,134,110,95,100,61],abilities:["sandstream"],
-    pool:["stoneedge","rockslide","crunch","earthquake","ironhead","icepunch","firepunch"],
+    pool:["stoneedge","rockslide","crunch","earthquake","ironhead","icepunch","firepunch","stealthrock","roar"],
     defPts:{atk:32,hp:32,spd:2},defItem:"stone:tyranitarMega",defNature:"adamant",img:"tyranitar",
     megas:[{id:"tyranitarMega",name:"メガバンギラス",stone:"バンギラスナイト",base:[100,164,150,95,120,71],types:["rock","dark"],ability:"sandstream",img:"tyranitar-mega"}]},
   swampert:{name:"ラグラージ",types:["water","ground"],base:[100,110,90,85,90,60],abilities:["torrent"],
-    pool:["waterfall","earthquake","icepunch","stoneedge","hydropump","rockslide","raindance"],
+    pool:["waterfall","earthquake","icepunch","stoneedge","hydropump","rockslide","raindance","stealthrock","yawn","roar"],
     defPts:{atk:32,hp:32,spd:2},defItem:"stone:swampertMega",defNature:"adamant",img:"swampert",
     megas:[{id:"swampertMega",name:"メガラグラージ",stone:"ラグラージナイト",base:[100,150,110,95,110,70],types:["water","ground"],ability:"swiftswim",img:"swampert-mega"}]},
   fluttermane:{name:"ハバタクカミ",types:["ghost","fairy"],base:[55,55,55,135,135,135],abilities:["protosynthesis"],
@@ -600,7 +610,7 @@ const SPECIES = {
     pool:["hydropump","darkpulse","icebeam","gunkshot","watershuriken","nightslash"],
     defPts:{spa:32,spe:32,hp:2},defItem:"lifeorb",defNature:"timid",img:"greninja"},
   raichu:{name:"ライチュウ",types:["electric"],base:[60,90,55,90,80,110],abilities:["static"],
-    pool:["thunderbolt","thunder","voltswitch","wildcharge","quickattack","focusblast","bodyslam","thunderwave"],
+    pool:["thunderbolt","thunder","voltswitch","wildcharge","quickattack","focusblast","bodyslam","thunderwave","nastyplot","encore"],
     defPts:{spa:32,spe:32,hp:2},defItem:"stone:raichuMegaY",defNature:"timid",img:"raichu",
     megas:[{id:"raichuMegaX",name:"メガライチュウX",stone:"ライチュウナイトX",base:[60,135,95,90,95,110],types:["electric"],ability:"electricsurge",img:null},
            {id:"raichuMegaY",name:"メガライチュウY",stone:"ライチュウナイトY",base:[60,100,55,160,80,130],types:["electric"],ability:"noguard",img:null}]},
@@ -636,6 +646,7 @@ function makeMon(entry) {
     pts: entry.pts, img: sp.img, isMega: false, megaAura: false,
     stages: {atk:0,def:0,spa:0,spd:0,spe:0}, choiceLock: null, disguiseBusted: false,
     status: null, sleepTurns: 0, flinched: false,
+    encore: null, drowsy: 0, roosting: false,
     moves: entry.moves.map((k) => ({ key: k, pp: MOVES[k].pp })),
   };
 }
@@ -680,18 +691,35 @@ const Music = {
     loop(t0);
   },
   section(sec, t0, beat, out) {
+    const ctx = getCtx();
     for (const tr of sec.tracks) {
       let t = t0;
       for (const [note, beats] of tr.notes) {
         const d = beats * beat;
         if (note) {
-          const ctx = getCtx(), o = ctx.createOscillator(), g = ctx.createGain();
-          o.type = tr.wave; o.frequency.value = noteFreq(note);
+          const freq = noteFreq(note);
+          const g = ctx.createGain();
           g.gain.setValueAtTime(0, t);
           g.gain.linearRampToValueAtTime(tr.vol, t + .012);
           g.gain.setValueAtTime(tr.vol, t + d * .68);
           g.gain.linearRampToValueAtTime(.0001, t + d * .92);
-          o.connect(g).connect(out); o.start(t); o.stop(t + d);
+          g.connect(out);
+          // fat: デチューン2オシレータで厚み / 長音にはビブラート
+          const detunes = tr.fat ? [-7, 7] : [0];
+          for (const dt of detunes) {
+            const o = ctx.createOscillator();
+            o.type = tr.wave; o.frequency.value = freq; o.detune.value = dt;
+            if (tr.fat && d > beat * .9) {
+              const lfo = ctx.createOscillator(), lg = ctx.createGain();
+              lfo.frequency.value = 5.5; lg.gain.value = 10;
+              lfo.connect(lg).connect(o.detune);
+              lfo.start(t + d * .3); lfo.stop(t + d);
+            }
+            const og = ctx.createGain();
+            og.gain.value = tr.fat ? .55 : 1;
+            o.connect(og).connect(g);
+            o.start(t); o.stop(t + d);
+          }
         }
         t += d;
       }
@@ -732,7 +760,7 @@ const SONGS = {
   title: {
     bpm: 100, beats: 16,
     tracks: [
-      { wave: "triangle", vol: .05, notes: [
+      { wave: "triangle", vol: .05, fat: true, notes: [
         ["G4",1],["C5",1],["E5",1.5],["D5",.5],["C5",1],["D5",1],["E5",1],["G5",1],
         ["A5",1.5],["G5",.5],["E5",1],["C5",1],["D5",2],["G4",2],
       ]},
@@ -746,7 +774,7 @@ const SONGS = {
     intro: {
       beats: 4,
       tracks: [
-        { wave: "square", vol: .042, notes: [
+        { wave: "square", vol: .038, fat: true, notes: [
           ["E6",.25],["Eb6",.25],["D6",.25],["Db6",.25],["C6",.25],["B5",.25],["Bb5",.25],["A5",.25],
           ["Ab5",.25],["G5",.25],["Gb5",.25],["F5",.25],["E5",.25],["Eb5",.25],["D5",.25],["B4",.25],
         ]},
@@ -759,7 +787,7 @@ const SONGS = {
     },
     drums: { kickEvery: 1, snareEvery: 2, snareOffset: 1, hat: true, hatEvery: .5, hatOffset: .25 },
     tracks: [
-      { wave: "square", vol: .034, notes: [
+      { wave: "square", vol: .03, fat: true, notes: [
         // A: 疾走リフ（シンコペーション）
         ["E5",.75],["E5",.25],["G5",.5],["A5",.5],["B5",.75],["B5",.25],["A5",.5],["G5",.5],
         ["A5",.75],["A5",.25],["C6",.5],["B5",.5],["A5",.5],["G5",.5],["E5",1],
@@ -794,7 +822,7 @@ const SONGS = {
     },
     drums: { kickEvery: 2, snareEvery: 2, snareOffset: 1, hat: true, hatEvery: 1, hatOffset: .5 },
     tracks: [
-      { wave: "square", vol: .04, notes: [
+      { wave: "square", vol: .036, fat: true, notes: [
         ["E5",.5],["G5",.5],["C6",1],["G5",1],["A5",.5],["B5",.5],["C6",2],["G5",1],["E5",1],
         ["F5",1],["A5",1],["G5",1],["E5",1],["D5",.5],["E5",.5],["F5",1],["G5",2],
       ]},
@@ -1190,8 +1218,11 @@ $("preview-start").addEventListener("click", (e) => { e.stopPropagation(); if (g
 const battle = {
   playerParty: [], enemyParty: [], pIdx: 0, eIdx: 0,
   potions: 2, over: false, weather: null, weatherTurns: 0,
+  terrain: null, terrainTurns: 0,
+  hazards: { player: {rocks:false, toxicspikes:0}, enemy: {rocks:false, toxicspikes:0} },
   megaUsed: {player:false,enemy:false}, fainted: {player:0,enemy:0},
 };
+const isGrounded = (m) => !m.types.includes("flying");
 const activeP = () => battle.playerParty[battle.pIdx];
 const activeE = () => battle.enemyParty[battle.eIdx];
 const monOf = (s) => s === "player" ? activeP() : activeE();
@@ -1207,9 +1238,9 @@ function effectiveMove(attacker, key) {
   if (attacker.ability === "pixilate" && mv.type === "normal" && mv.cat !== "status") { mv.type = "fairy"; mv.pixilated = true; }
   return mv;
 }
-function effAtkStat(a, move, isCrit, side) {
+function effAtkStat(a, move, isCrit, side, ignoreStage) {
   const sn = move.usesDef ? "def" : (move.cat === "phys" ? "atk" : "spa");
-  let stage = a.stages[sn];
+  let stage = ignoreStage ? 0 : a.stages[sn];
   if (isCrit && stage < 0) stage = 0;
   let v = a[sn] * stMul(stage);
   if (a.item === "choiceband" && sn === "atk") v *= 1.5;
@@ -1224,9 +1255,9 @@ function effAtkStat(a, move, isCrit, side) {
   if (a.status === "brn" && sn === "atk" && a.ability !== "guts") v *= .5;
   return Math.floor(v);
 }
-function effDefStat(d, move, isCrit) {
+function effDefStat(d, move, isCrit, ignoreStage) {
   const sn = (move.cat === "phys" || move.targetsDef) ? "def" : "spd";
-  let stage = d.stages[sn];
+  let stage = ignoreStage ? 0 : d.stages[sn];
   if (isCrit && stage > 0) stage = 0;
   let v = d[sn] * stMul(stage);
   if (d.item === "assaultvest" && sn === "spd") v *= 1.5;
@@ -1241,7 +1272,9 @@ function effSpe(m) {
   return Math.floor(v);
 }
 function calcDamage(a, d, move, isCrit, side) {
-  const atk = effAtkStat(a, move, isCrit, side), def = effDefStat(d, move, isCrit);
+  // てんねん: 相手のランク変化を無視
+  const atk = effAtkStat(a, move, isCrit, side, d.ability === "unaware");
+  const def = effDefStat(d, move, isCrit, a.ability === "unaware");
   let dmg = Math.floor(Math.floor(Math.floor(2 * LEVEL / 5 + 2) * move.power * atk / def) / 50) + 2;
   if (isCrit) dmg = Math.floor(dmg * 1.5);
   dmg = Math.floor(dmg * (85 + Math.floor(Math.random() * 16)) / 100);
@@ -1249,6 +1282,7 @@ function calcDamage(a, d, move, isCrit, side) {
   dmg = Math.floor(dmg * typeMultiplier(move.type, d));
   if (battle.weather === "sun") { if (move.type === "fire") dmg = Math.floor(dmg * 1.5); if (move.type === "water") dmg = Math.floor(dmg * .5); }
   if (battle.weather === "rain") { if (move.type === "water") dmg = Math.floor(dmg * 1.5); if (move.type === "fire") dmg = Math.floor(dmg * .5); }
+  if (battle.terrain === "electric" && move.type === "electric" && isGrounded(a)) dmg = Math.floor(dmg * 1.3);
   if (move.pixilated) dmg = Math.floor(dmg * 1.2);
   if (a.ability === "toughclaws" && move.contact) dmg = Math.floor(dmg * 1.3);
   if (a.ability === "reckless" && move.recoil) dmg = Math.floor(dmg * 1.2);
@@ -1282,10 +1316,13 @@ function updateBalls() {
 function updateWeatherUI() {
   const ind = $("weather-ind"), sc = $("battle-scene");
   sc.classList.remove("w-sun","w-sand","w-rain");
-  if (battle.weather === "sun") { ind.textContent = "☀ ひざしが つよい"; sc.classList.add("w-sun"); }
-  else if (battle.weather === "sand") { ind.textContent = "🌪 すなあらし"; sc.classList.add("w-sand"); }
-  else if (battle.weather === "rain") { ind.textContent = "☔ あめ"; sc.classList.add("w-rain"); }
-  ind.classList.toggle("hidden", !battle.weather);
+  let txt = "";
+  if (battle.weather === "sun") { txt = "☀ ひざしが つよい"; sc.classList.add("w-sun"); }
+  else if (battle.weather === "sand") { txt = "🌪 すなあらし"; sc.classList.add("w-sand"); }
+  else if (battle.weather === "rain") { txt = "☔ あめ"; sc.classList.add("w-rain"); }
+  if (battle.terrain === "electric") txt += (txt ? " / " : "") + "⚡ エレキフィールド";
+  ind.textContent = txt;
+  ind.classList.toggle("hidden", !txt);
 }
 function refreshSide(side, enter = true) {
   const m = monOf(side);
@@ -1352,8 +1389,41 @@ async function setWeather(kind, msg) {
   await say(msg);
   return true;
 }
+async function setTerrain(kind, msg) {
+  if (battle.terrain === kind) return false;
+  battle.terrain = kind; battle.terrainTurns = 5;
+  updateWeatherUI();
+  await say(msg);
+  return true;
+}
+// 設置技の被弾（ステルスロック・どくびし）
+async function applyHazards(side) {
+  const m = monOf(side), hz = battle.hazards[side];
+  if (m.hp <= 0) return;
+  if (hz.rocks) {
+    const mult = typeMultiplier("rock", m);
+    if (mult > 0) {
+      m.hp = Math.max(0, m.hp - Math.max(1, Math.floor(m.maxHp * mult / 8)));
+      setHpBar(m, side);
+      await say(`${m.name}に とがった いわが くいこんだ！`, { noWait: true });
+      if (m.hp <= 0) { await faintOut(m, side); await handleFaint(side); return; }
+    }
+  }
+  if (hz.toxicspikes > 0 && isGrounded(m)) {
+    if (m.types.includes("poison")) {
+      hz.toxicspikes = 0;
+      await say(`${m.name}は どくびしを すいとった！`, { noWait: true });
+    } else if (!m.types.includes("steel") && !m.status) {
+      await inflictStatus(m, side, "psn", true);
+    }
+  }
+}
 async function onSwitchIn(side) {
+  await applyHazards(side);
+  if (battle.over) return;
   const m = monOf(side), foe = monOf(otherSide(side));
+  if (m.hp <= 0) return;
+  if (m.ability === "electricsurge") await setTerrain("electric", "あしもとに でんきが かけめぐる！");
   if (m.ability === "intimidate" && foe.hp > 0) {
     await say(`${m.name}の いかく！`);
     if (foe.ability === "innerfocus") await say(`${foe.name}は せいしんりょくで さがらない！`);
@@ -1414,6 +1484,7 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
   const move = effectiveMove(attacker, moveSlot.key);
   moveSlot.pp--;
   if (["choiceband","choicespecs","choicescarf"].includes(attacker.item)) attacker.choiceLock = moveSlot.key;
+  attacker.lastMoveKey = moveSlot.key;
   await say(`${attacker.name}の ${move.name}！`, { noWait: true });
 
   if (attacker.ability === "protean" && move.cat !== "status" && !(attacker.types.length === 1 && attacker.types[0] === move.type)) {
@@ -1429,16 +1500,72 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
 
   // 変化技
   if (move.cat === "status") {
+    // 自分対象・天候・回復は跳ね返らない
+    if (move.selfBoost) {
+      for (const [st, d] of Object.entries(move.selfBoost)) await applyStatChange(attacker, attackerSide, st, d);
+      return null;
+    }
     if (move.weather) {
       const msgs = { rain: "あめが ふりはじめた！", sun: "ひざしが つよくなった！", sand: "すなあらしが ふきはじめた！" };
       if (!(await setWeather(move.weather, msgs[move.weather]))) await say("しかし うまく きまらなかった！");
       return null;
     }
+    if (move.roost) {
+      if (attacker.hp >= attacker.maxHp) { await say("しかし HPは まんたんだ！"); return null; }
+      attacker.hp = Math.min(attacker.maxHp, attacker.hp + Math.floor(attacker.maxHp / 2));
+      if (attacker.types.includes("flying")) { attacker.types = attacker.types.filter((t) => t !== "flying"); if (!attacker.types.length) attacker.types = ["normal"]; attacker.roosting = true; }
+      setHpBar(attacker, attackerSide);
+      sfx.heal();
+      await say(`${attacker.name}は はねを やすめて かいふくした！`);
+      return null;
+    }
+    // ここから相手対象 → マジックミラーで反射
+    let tgt = defender, tgtSide = defenderSide, src = attacker, srcSide = attackerSide;
+    if (defender.ability === "magicbounce") {
+      await say(`${defender.name}の マジックミラーで はねかえした！`);
+      tgt = attacker; tgtSide = attackerSide; src = defender; srcSide = defenderSide;
+    } else if (defender.ability === "goodasgold") {
+      await say(`${defender.name}の おうごんのからだで きかない！`);
+      return null;
+    }
+    if (move.hazard) {
+      const hz = battle.hazards[tgtSide];
+      if (hz.rocks) { await say("しかし うまく きまらなかった！"); return null; }
+      hz.rocks = true;
+      await say(`${tgt.name}の あしもとに とがった いわが ちらばった！`);
+      return null;
+    }
+    if (move.yawn) {
+      if (tgt.status || tgt.drowsy) { await say("しかし うまく きまらなかった！"); return null; }
+      if (battle.terrain === "electric" && isGrounded(tgt)) { await say(`エレキフィールドで ねむけが ふきとんだ！`); return null; }
+      tgt.drowsy = 2;
+      await say(`${tgt.name}は ねむくなった！`);
+      return null;
+    }
+    if (move.encore) {
+      const last = tgt.lastMoveKey;
+      if (!last || tgt.encore) { await say("しかし うまく きまらなかった！"); return null; }
+      tgt.encore = { moveKey: last, turns: 3 };
+      await say(`${tgt.name}は アンコールを うけた！（${MOVES[last].name}しか だせない）`);
+      return null;
+    }
+    if (move.roar) {
+      const party = tgtSide === "player" ? battle.playerParty : battle.enemyParty;
+      const idxs = party.map((x, i) => ({ x, i })).filter(({ x, i }) => x.hp > 0 && i !== (tgtSide === "player" ? battle.pIdx : battle.eIdx));
+      if (!idxs.length) { await say("しかし うまく きまらなかった！"); return null; }
+      const next = idxs[Math.floor(Math.random() * idxs.length)].i;
+      await say(`${tgt.name}は ふきとばされた！`);
+      if (tgtSide === "player") battle.pIdx = next; else battle.eIdx = next;
+      resetOnSwitch(monOf(tgtSide));
+      refreshSide(tgtSide);
+      await say(`${monOf(tgtSide).name}が ひきずりだされた！`, { noWait: true });
+      await onSwitchIn(tgtSide);
+      return null;
+    }
     if (move.inflict) {
-      if (defender.ability === "goodasgold") { await say(`${defender.name}の おうごんのからだで きかない！`); return null; }
-      if (move.inflict === "par" && typeMultiplier("electric", defender) === 0) { await say(`${defender.name}には こうかが ないようだ…`); return null; }
-      await inflictStatus(defender, defenderSide, move.inflict);
-      return defender.hp <= 0 ? "defender" : null;
+      if (move.inflict === "par" && typeMultiplier("electric", tgt) === 0) { await say(`${tgt.name}には こうかが ないようだ…`); return null; }
+      await inflictStatus(tgt, tgtSide, move.inflict);
+      return tgt.hp <= 0 ? (tgt === defender ? "defender" : "attacker") : null;
     }
     return null;
   }
@@ -1504,6 +1631,11 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
   if (move.type === "dark" && defender.ability === "justified") { await say(`${defender.name}の せいぎのこころ！`); await applyStatChange(defender, defenderSide, "atk", 1); }
   if (defender.ability === "stamina") { await say(`${defender.name}の じきゅうりょく！`); await applyStatChange(defender, defenderSide, "def", 1); }
 
+  // どくげしょう: 物理技を受けると相手側にどくびし
+  if (move.cat === "phys" && defender.ability === "toxicdebris" && battle.hazards[attackerSide].toxicspikes < 2) {
+    battle.hazards[attackerSide].toxicspikes++;
+    await say(`${defender.name}の どくげしょう！ ${attacker.name}の あしもとに どくびしが ちらばった！`);
+  }
   if (move.contact) {
     if (defender.ability === "roughskin") {
       attacker.hp = Math.max(0, attacker.hp - Math.max(1, Math.floor(attacker.maxHp / 8)));
@@ -1572,6 +1704,24 @@ async function endOfTurn() {
     if (m.status === "psn") { if (await chip(m, side, 1/8, `${m.name}は どくの ダメージ！`)) continue; }
     if (m.item === "leftovers" && m.hp < m.maxHp) { m.hp = Math.min(m.maxHp, m.hp + Math.max(1, Math.floor(m.maxHp / 16))); setHpBar(m, side); }
     if (m.item === "flameorb" && !m.status) { await inflictStatus(m, side, "brn", true); }
+    // はねやすめのタイプ復帰
+    if (m.roosting) { m.types = [...m.baseTypes]; m.roosting = false; }
+    // あくび→ねむり
+    if (m.drowsy > 0) {
+      m.drowsy--;
+      if (m.drowsy === 0 && !m.status && !(battle.terrain === "electric" && isGrounded(m))) {
+        await inflictStatus(m, side, "slp", true);
+      }
+    }
+    // アンコール経過
+    if (m.encore && --m.encore.turns <= 0) { m.encore = null; await say(`${m.name}の アンコールが とけた！`, { noWait: true }); }
+  }
+  if (battle.terrain && !battle.over) {
+    if (--battle.terrainTurns <= 0) {
+      battle.terrain = null;
+      updateWeatherUI();
+      await say("あしもとの でんきが きえさった。", { noWait: true });
+    }
   }
   if (battle.weather && !battle.over) {
     if (--battle.weatherTurns <= 0) {
@@ -1615,7 +1765,7 @@ function showPartyModal(forced) {
     modal.appendChild(panel);
   });
 }
-function resetOnSwitch(m) { m.stages = {atk:0,def:0,spa:0,spd:0,spe:0}; m.choiceLock = null; m.types = [...m.baseTypes]; m.flinched = false; }
+function resetOnSwitch(m) { m.stages = {atk:0,def:0,spa:0,spd:0,spe:0}; m.choiceLock = null; m.types = [...m.baseTypes]; m.flinched = false; m.encore = null; m.drowsy = 0; m.roosting = false; }
 function enemyChooseNext() {
   const p = activeP();
   let best = -1, bs = -1;
@@ -1691,7 +1841,7 @@ function showMoveMenu(m, side) {
       }
       m.moves.forEach((slot) => {
         const mv = effectiveMove(m, slot.key);
-        const locked = m.choiceLock && m.choiceLock !== slot.key;
+        const locked = (m.choiceLock && m.choiceLock !== slot.key) || (m.encore && m.encore.moveKey !== slot.key);
         const vestBlock = m.item === "assaultvest" && mv.cat === "status";
         const b = document.createElement("button");
         b.className = "move-btn";
@@ -1741,6 +1891,8 @@ function enemyChooseMove() {
   const e = activeE(), p = activeP();
   let usable = e.moves.filter((m) => m.pp > 0);
   if (e.choiceLock) usable = usable.filter((m) => m.key === e.choiceLock);
+  if (e.encore) usable = usable.filter((m) => m.key === e.encore.moveKey);
+  if (e.item === "assaultvest") usable = usable.filter((m) => MOVES[m.key].cat !== "status");
   if (usable.length === 0) return null;
   const scored = usable.map((m) => {
     const mv = effectiveMove(e, m.key);
@@ -1751,6 +1903,12 @@ function enemyChooseMove() {
       if (mv.weather && battle.weather !== mv.weather) s = 55;
       if (mv.inflict && p.status) s = 1;
       if (mv.weather && battle.weather === mv.weather) s = 1;
+      if (mv.selfBoost) { const st = Object.keys(mv.selfBoost)[0]; s = e.stages[st] < 2 && e.hp > e.maxHp * .6 ? 65 : 1; }
+      if (mv.hazard) s = battle.hazards.player.rocks ? 1 : 50;
+      if (mv.yawn) s = (p.status || p.drowsy) ? 1 : 58;
+      if (mv.encore) s = (!p.lastMoveKey || p.encore) ? 1 : 40;
+      if (mv.roar) s = 12;
+      if (mv.roost) s = e.hp < e.maxHp * .5 ? 75 : 1;
     } else {
       s = mv.power * (e.types.includes(mv.type) ? 1.5 : 1) * typeMultiplier(mv.type, p);
     }
@@ -1840,6 +1998,8 @@ async function startBattle() {
   battle.enemyParty = enemyPickThree();
   battle.pIdx = 0; battle.eIdx = 0; battle.potions = 2; battle.over = false;
   battle.weather = null; battle.weatherTurns = 0;
+  battle.terrain = null; battle.terrainTurns = 0;
+  battle.hazards = { player: {rocks:false, toxicspikes:0}, enemy: {rocks:false, toxicspikes:0} };
   battle.megaUsed = {player:false,enemy:false};
   battle.fainted = {player:0,enemy:0};
   showScene("battle-scene");
