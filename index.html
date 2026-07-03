@@ -667,8 +667,9 @@ const SPECIES = {
     pool:["kowtowcleave","ironhead","suckerpunch","stoneedge","nightslash","brickbreak","swordsdance"],
     defPts:{atk:32,hp:32,spd:2},defItem:"leftovers",defNature:"adamant",img:"kingambit"},
   dragonite:{name:"カイリュー",types:["dragon","flying"],base:[91,134,95,100,100,80],abilities:["multiscale","innerfocus"],
-    pool:["outrage","extremespeed","earthquake","ironhead","firepunch","dragondance","bodyslam","roost","swordsdance"],
-    defPts:{atk:32,hp:32,spd:2},defItem:"choiceband",defNature:"adamant",img:"dragonite"},
+    pool:["outrage","extremespeed","earthquake","ironhead","firepunch","dragondance","bodyslam","roost","swordsdance","dracometeor","flamethrower","dragonpulse"],
+    defPts:{atk:32,hp:32,spd:2},defItem:"stone:dragoniteMega",defNature:"adamant",img:"dragonite",
+    megas:[{id:"dragoniteMega",name:"メガカイリュー",stone:"カイリューナイト",base:[91,134,110,145,110,110],types:["dragon","flying"],ability:"multiscale",img:"dragonite-mega"}]},
   gengar:{name:"ゲンガー",types:["ghost","poison"],base:[60,65,60,130,75,110],abilities:["cursedbody"],
     pool:["shadowball","sludgebomb","thunderbolt","focusblast","psychic","dazzlinggleam","willowisp","thunderwave","nastyplot","encore"],
     defPts:{spa:32,spe:32,hp:2},defItem:"stone:gengarMega",defNature:"timid",img:"gengar",
@@ -720,6 +721,54 @@ const EXTRA_MEGAS = {
   gyarados:  [{ id: "gyaradosMega",  name: "メガギャラドス", stone: "ギャラドスナイト", base: [95,155,109,70,130,81],  types: ["water","dark"],    ability: "moldbreaker", img: "gyarados-mega" }],
 };
 Object.entries(EXTRA_MEGAS).forEach(([k, m]) => { if (SPECIES[k]) SPECIES[k].megas = m; });
+
+/* ===== よくある型（チャンピオンズ使用率データ・ポケ徹定番セット準拠のデフォルト） =====
+   AS={atk32,spe32,hp2} CS={spa32,spe32,hp2} HA={atk32,hp32,spd2} HC={spa32,hp32,def2} HB={hp32,def32,spd2} HD={hp32,spd32,def2} */
+const _AS={atk:32,spe:32,hp:2}, _CS={spa:32,spe:32,hp:2}, _HA={atk:32,hp:32,spd:2}, _HC={spa:32,hp:32,def:2}, _HB={hp:32,def:32,spd:2}, _HD={hp:32,spd:32,def:2};
+const BUILD_OVERRIDES = {
+  garchomp:    { nature:"jolly",   item:"focussash",  pts:_AS, moves:["earthquake","stealthrock","outrage","scaleshot"] },
+  dragonite:   { nature:"modest",  item:"stone:dragoniteMega", pts:_CS, moves:["dracometeor","flamethrower","extremespeed","roost"] },
+  gholdengo:   { nature:"modest",  item:"choicescarf", pts:_CS, moves:["shadowball","makeitrain","nastyplot","recover"] },
+  mimikyu:     { nature:"jolly",   item:"lifeorb",    pts:_AS, moves:["playrough","shadowclaw","shadowsneak","swordsdance"] },
+  charizard:   { nature:"timid",   item:"stone:charizardMegaY", pts:_CS, moves:["fireblast","solarbeam","airslash","roost"] },
+  archaludon:  { nature:"modest",  item:"leftovers",  pts:_HC, moves:["flashcannon","dracometeor","bodypress","stealthrock"] },
+  gengar:      { nature:"timid",   item:"stone:gengarMega", pts:_CS, moves:["shadowball","sludgebomb","focusblast","nastyplot"] },
+  tyranitar:   { nature:"adamant", item:"stone:tyranitarMega", pts:_HA, moves:["stoneedge","crunch","earthquake","dragondance"] },
+  gyarados:    { nature:"jolly",   item:"stone:gyaradosMega", pts:_AS, moves:["waterfall","dragondance","earthquake","stoneedge"] },
+  volcarona:   { nature:"timid",   item:"leftovers",  pts:_CS, moves:["quiverdance","flamethrower","gigadrain","psychic"] },
+  azumarill:   { nature:"adamant", item:"sitrusberry", pts:_HA, moves:["bellydrum","playrough","aquajet","waterfall"] },
+  pelipper:    { nature:"bold",    item:"leftovers",  pts:_HB, moves:["hydropump","airslash","uturn","roost"] },
+  landorustherian:{ nature:"jolly", item:"choicescarf", pts:_AS, moves:["earthquake","uturn","stoneedge","rockslide"] },
+  dragapult:   { nature:"jolly",   item:"choiceband", pts:_AS, moves:["dragondarts","uturn","quickattack","flamecharge"] },
+  rotomwash:   { nature:"bold",    item:"leftovers",  pts:_HB, moves:["hydropump","voltswitch","thunderbolt","willowisp"] },
+  excadrill:   { nature:"jolly",   item:"focussash",  pts:_AS, moves:["earthquake","ironhead","rockslide","swordsdance"] },
+  heatran:     { nature:"modest",  item:"leftovers",  pts:_HC, moves:["flamethrower","earthpower","flashcannon","stealthrock"] },
+  urshifu:     { nature:"jolly",   item:"choiceband", pts:_AS, moves:["wickedblow","closecombat","suckerpunch","uturn"] },
+  lucario:     { nature:"jolly",   item:"stone:lucarioMega", pts:_AS, moves:["swordsdance","closecombat","extremespeed","meteormash"] },
+  salamence:   { nature:"jolly",   item:"stone:salamenceMega", pts:_AS, moves:["dragondance","doubleedge","earthquake","roost"] },
+  gardevoir:   { nature:"timid",   item:"stone:gardevoirMega", pts:_CS, moves:["moonblast","psyshock","focusblast","calmmind"] },
+  scizor:      { nature:"adamant", item:"stone:scizorMega", pts:_HA, moves:["swordsdance","bulletpunch","uturn","knockoff"] },
+  mawile:      { nature:"adamant", item:"stone:mawileMega", pts:_HA, moves:["playrough","suckerpunch","swordsdance","ironhead"] },
+  hippowdon:   { nature:"impish",  item:"leftovers",  pts:_HB, moves:["earthquake","slackoff","stealthrock","yawn"] },
+  clodsire:    { nature:"careful", item:"leftovers",  pts:_HD, moves:["earthquake","recover","yawn","poisonjab"] },
+  dondozo:     { nature:"impish",  item:"leftovers",  pts:_HB, moves:["wavecrash","bodypress","earthquake","yawn"] },
+  corviknight: { nature:"impish",  item:"leftovers",  pts:_HB, moves:["bravebird","bodypress","roost","irondefense"] },
+  milotic:     { nature:"bold",    item:"leftovers",  pts:_HB, moves:["scald","recover","icebeam","dragonpulse"] },
+  greninja:    { nature:"timid",   item:"lifeorb",    pts:_CS, moves:["hydropump","darkpulse","icebeam","watershuriken"] },
+  metagross:   { nature:"adamant", item:"stone:metagrossMega", pts:_HA, moves:["meteormash","zenheadbutt","earthquake","bulletpunch"] },
+};
+Object.entries(BUILD_OVERRIDES).forEach(([k, o]) => {
+  const sp = SPECIES[k];
+  if (!sp) return;
+  if (o.nature) sp.defNature = o.nature;
+  if (o.item) sp.defItem = o.item;
+  if (o.pts) sp.defPts = o.pts;
+  if (o.moves) {
+    const valid = o.moves.filter((m) => MOVES[m]);
+    if (valid.length === 4) sp.defMoves = valid;
+    valid.forEach((m) => { if (!sp.pool.includes(m)) sp.pool.push(m); });
+  }
+});
 
 const spritePathByImg = (img, back) => `sprites/${img}${back ? "-back" : ""}.gif`;
 const spritePath = (key, back) => spritePathByImg(SPECIES[key].img, back);
@@ -992,10 +1041,15 @@ const SETUPS_PHYS = ["dragondance", "swordsdance", "bulkup", "bellydrum"];
 const SETUPS_SPEC = ["quiverdance", "nastyplot", "calmmind"];
 function defaultEntry(key) {
   const sp = SPECIES[key];
-  const attacks = sp.pool.filter((m) => MOVES[m].cat !== "status");
-  const physical = sp.base[1] >= sp.base[3] || sp.abilities.includes("hugepower");
-  const setup = (physical ? SETUPS_PHYS : SETUPS_SPEC).find((m) => sp.pool.includes(m));
-  const moves = setup ? [setup, ...attacks.slice(0, 3)] : attacks.slice(0, 4);
+  let moves;
+  if (sp.defMoves) {
+    moves = [...sp.defMoves];   // よくある型（使用率データ準拠）
+  } else {
+    const attacks = sp.pool.filter((m) => MOVES[m].cat !== "status");
+    const physical = sp.base[1] >= sp.base[3] || sp.abilities.includes("hugepower");
+    const setup = (physical ? SETUPS_PHYS : SETUPS_SPEC).find((m) => sp.pool.includes(m));
+    moves = setup ? [setup, ...attacks.slice(0, 3)] : attacks.slice(0, 4);
+  }
   return { key, pts: Object.assign({hp:0,atk:0,def:0,spa:0,spd:0,spe:0}, sp.defPts),
     ability: sp.abilities[0], item: sp.defItem || "none", nature: sp.defNature || "serious", moves };
 }
@@ -1311,6 +1365,17 @@ function openCustomScene(entry, returnTo = "box") {
       b.addEventListener("click", (e) => { e.stopPropagation(); entry.pts = Object.assign({hp:0,atk:0,def:0,spa:0,spd:0,spe:0}, p.pts); sfx.select(); render(); });
       ps.appendChild(b);
     });
+    // よくある型（デフォルト）に全部もどす
+    const rb = document.createElement("button");
+    rb.textContent = "★よくある型にもどす（全部）";
+    rb.style.background = "#8a5aa0";
+    rb.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const d = defaultEntry(entry.key);
+      entry.pts = d.pts; entry.nature = d.nature; entry.item = d.item; entry.ability = d.ability; entry.moves = d.moves;
+      sfx.pick(); render();
+    });
+    ps.appendChild(rb);
     body.appendChild(ps);
     body.scrollTop = keepScroll;
   };
@@ -1955,69 +2020,69 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
     await say(`${defender.name}の こおりが とけた！`);
   }
 
-  if (defender.hp <= 0) {
-    await faintOut(defender, defenderSide);
-    if (attacker.item === "lifeorb") {
-      attacker.hp = Math.max(0, attacker.hp - Math.max(1, Math.floor(attacker.maxHp / 10)));
-      setHpBar(attacker, attackerSide);
-      if (attacker.hp <= 0) { await faintOut(attacker, attackerSide); return "both"; }
-    }
-    return "defender";
-  }
+  // 倒したかどうかに関係なく、反動・自分の能力変化は発動する（本家仕様）
+  const koed = defender.hp <= 0;
+  if (koed) await faintOut(defender, defenderSide);
 
-  if (mult > 1 && defender.item === "weaknesspolicy" && !defender.itemUsed) {
-    defender.itemUsed = true;
-    await say(`${defender.name}の じゃくてんほけんが はつどう！`);
-    await applyStatChange(defender, defenderSide, "atk", 2);
-    await applyStatChange(defender, defenderSide, "spa", 2);
-  }
-  if (move.type === "dark" && defender.ability === "justified") { await say(`${defender.name}の せいぎのこころ！`); await applyStatChange(defender, defenderSide, "atk", 1); }
-  if (defender.ability === "stamina") { await say(`${defender.name}の じきゅうりょく！`); await applyStatChange(defender, defenderSide, "def", 1); }
-
-  // どくげしょう: 物理技を受けると相手側にどくびし
-  if (move.cat === "phys" && defender.ability === "toxicdebris" && battle.hazards[attackerSide].toxicspikes < 2) {
-    battle.hazards[attackerSide].toxicspikes++;
-    await say(`${defender.name}の どくげしょう！ ${attacker.name}の あしもとに どくびしが ちらばった！`);
-  }
-  if (move.contact) {
-    if (defender.ability === "roughskin") {
-      attacker.hp = Math.max(0, attacker.hp - Math.max(1, Math.floor(attacker.maxHp / 8)));
-      setHpBar(attacker, attackerSide);
-      await say(`${attacker.name}は さめはだで きずついた！`);
-      if (attacker.hp <= 0) { await faintOut(attacker, attackerSide); return "attacker"; }
+  if (!koed) {
+    if (mult > 1 && defender.item === "weaknesspolicy" && !defender.itemUsed) {
+      defender.itemUsed = true;
+      await say(`${defender.name}の じゃくてんほけんが はつどう！`);
+      await applyStatChange(defender, defenderSide, "atk", 2);
+      await applyStatChange(defender, defenderSide, "spa", 2);
     }
-    if (defender.ability === "static" && battleRandom() < .3 && !attacker.status) {
-      await say(`${defender.name}の せいでんき！`);
-      await inflictStatus(attacker, attackerSide, "par", true);
+    if (move.type === "dark" && defender.ability === "justified") { await say(`${defender.name}の せいぎのこころ！`); await applyStatChange(defender, defenderSide, "atk", 1); }
+    if (defender.ability === "stamina") { await say(`${defender.name}の じきゅうりょく！`); await applyStatChange(defender, defenderSide, "def", 1); }
+    // どくげしょう: 物理技を受けると相手側にどくびし
+    if (move.cat === "phys" && defender.ability === "toxicdebris" && battle.hazards[attackerSide].toxicspikes < 2) {
+      battle.hazards[attackerSide].toxicspikes++;
+      await say(`${defender.name}の どくげしょう！ ${attacker.name}の あしもとに どくびしが ちらばった！`);
+    }
+    if (move.contact) {
+      if (defender.ability === "roughskin") {
+        attacker.hp = Math.max(0, attacker.hp - Math.max(1, Math.floor(attacker.maxHp / 8)));
+        setHpBar(attacker, attackerSide);
+        await say(`${attacker.name}は さめはだで きずついた！`);
+      }
+      if (attacker.hp > 0 && defender.ability === "static" && battleRandom() < .3 && !attacker.status) {
+        await say(`${defender.name}の せいでんき！`);
+        await inflictStatus(attacker, attackerSide, "par", true);
+      }
     }
   }
-  if (move.recoil) {
+  // 反動（倒しても発動）
+  if (move.recoil && attacker.hp > 0) {
     attacker.hp = Math.max(0, attacker.hp - Math.max(1, Math.floor(dmg / 3)));
     setHpBar(attacker, attackerSide);
     await say(`${attacker.name}は はんどうで ダメージを うけた！`);
-    if (attacker.hp <= 0) { await faintOut(attacker, attackerSide); return "attacker"; }
   }
   if (move.drain && attacker.hp < attacker.maxHp && attacker.hp > 0) {
     attacker.hp = Math.min(attacker.maxHp, attacker.hp + Math.max(1, Math.floor(dmg / 2)));
     setHpBar(attacker, attackerSide);
     await say(`${attacker.name}は たいりょくを すいとった！`, { noWait: true });
   }
-  if (attacker.item === "lifeorb") {
+  // いのちのたま（倒しても発動）
+  if (attacker.item === "lifeorb" && attacker.hp > 0) {
     attacker.hp = Math.max(0, attacker.hp - Math.max(1, Math.floor(attacker.maxHp / 10)));
     setHpBar(attacker, attackerSide);
-    if (attacker.hp <= 0) { await say(`${attacker.name}は いのちのたまで ちからつきた！`, { noWait: true }); await faintOut(attacker, attackerSide); return "attacker"; }
+    if (attacker.hp <= 0) await say(`${attacker.name}は いのちのたまで ちからつきた！`, { noWait: true });
   }
-  // 追加効果
-  if (move.sec) {
-    if (move.sec.status && battleRandom() * 100 < move.sec.chance) await inflictStatus(defender, defenderSide, move.sec.status, true);
-    if (move.sec.flinch && !defender.actedThisTurn && battleRandom() * 100 < move.sec.flinch && defender.ability !== "innerfocus") defender.flinched = true;
+  // 自分の能力変化（りゅうせいぐん・ゴールドラッシュ等は倒しても発動）
+  if (move.self && attacker.hp > 0) for (const [st, d] of Object.entries(move.self)) await applyStatChange(attacker, attackerSide, st, d);
+  if (!koed) {
+    if (move.sec) {
+      if (move.sec.status && battleRandom() * 100 < move.sec.chance) await inflictStatus(defender, defenderSide, move.sec.status, true);
+      if (move.sec.flinch && !defender.actedThisTurn && battleRandom() * 100 < move.sec.flinch && defender.ability !== "innerfocus") defender.flinched = true;
+    }
+    if (move.target) for (const [st, d] of Object.entries(move.target)) await applyStatChange(defender, defenderSide, st, d, { fromOpponent: true });
+    await checkSitrus(defender, defenderSide);
   }
-  if (move.self) for (const [st, d] of Object.entries(move.self)) await applyStatChange(attacker, attackerSide, st, d);
-  if (move.target) for (const [st, d] of Object.entries(move.target)) await applyStatChange(defender, defenderSide, st, d, { fromOpponent: true });
-
-  await checkSitrus(defender, defenderSide);
   await checkSitrus(attacker, attackerSide);
-  return null;
+
+  const attackerFainted = attacker.hp <= 0;
+  if (attackerFainted && !koed) { await faintOut(attacker, attackerSide); return "attacker"; }
+  if (attackerFainted && koed) { await faintOut(attacker, attackerSide); return "both"; }
+  return koed ? "defender" : null;
 }
 async function checkSitrus(m, side) {
   if (m.item === "sitrusberry" && !m.itemUsed && m.hp > 0 && m.hp <= Math.floor(m.maxHp / 2)) {
@@ -2459,7 +2524,7 @@ $("net-btn").addEventListener("click", (e) => {
 $("net-host").addEventListener("click", (e) => { e.stopPropagation(); sfx.pick(); netHost(); });
 $("net-join").addEventListener("click", (e) => { e.stopPropagation(); sfx.pick(); netJoin(); });
 $("net-back").addEventListener("click", (e) => { e.stopPropagation(); sfx.unpick(); netReset(); showScene("team-scene"); });
-const GAME_VER = "v13";
+const GAME_VER = "v14";
 loadBuilds();
 loadTeams();
 buildTitleParade();
