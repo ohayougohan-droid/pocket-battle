@@ -97,6 +97,43 @@
   #team-actions { display: flex; gap: 8px; justify-content: center; }
   #item-warn { text-align: center; color: #ff9a9a; font-size: 11px; font-weight: bold; min-height: 16px; margin-bottom: 4px; }
 
+  /* ===== チーム6体ビュー ===== */
+  #team-six {
+    flex: 1; overflow-y: auto;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; align-content: start; padding: 4px 2px 10px;
+  }
+  .bigslot {
+    position: relative;
+    background: linear-gradient(180deg, #38427a, #262e5c);
+    border: 2px solid #5666a8; border-radius: 12px;
+    min-height: 148px; padding: 10px 6px 8px;
+    text-align: center; cursor: pointer;
+  }
+  .bigslot img { max-height: 72px; image-rendering: pixelated; }
+  .bigslot .bs-nm { font-size: 13px; font-weight: bold; margin-top: 4px; }
+  .bigslot .bs-lv { font-size: 10px; color: #9fc0ff; }
+  .bigslot .bs-it { font-size: 10px; color: #ffd95e; white-space: nowrap; overflow: hidden; }
+  .bigslot .bs-x {
+    position: absolute; top: -8px; right: -8px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: #d43a2a; color: #fff; border: 2px solid #fff;
+    font-size: 13px; font-weight: bold; line-height: 22px; cursor: pointer; z-index: 2;
+  }
+  .bigslot.empty {
+    border-style: dashed; display: flex; align-items: center; justify-content: center;
+    color: #8a97c8; font-size: 15px; font-weight: bold; background: rgba(255,255,255,.04);
+  }
+  #picker-modal { position: absolute; inset: 0; background: rgba(0,0,0,.7); z-index: 25; display: flex; align-items: center; justify-content: center; }
+  #picker-panel {
+    width: 390px; max-height: 720px;
+    background: linear-gradient(180deg, #2c3560, #1d2445);
+    border: 2px solid #8a97c8; border-radius: 14px;
+    padding: 12px; color: #fff; display: flex; flex-direction: column;
+  }
+  #picker-panel h3 { font-size: 14px; color: #ffd95e; text-align: center; margin-bottom: 8px; }
+  #picker-grid { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+
   /* ===== カスタム画面（フルページ） ===== */
   #custom-scene { color: #fff; display: flex; flex-direction: column; }
   #custom-head {
@@ -292,12 +329,11 @@
         <button class="tab-btn" data-go="box">ボックス</button>
         <button class="tab-btn on" data-go="team">チームへんせい</button>
       </div>
-      <div class="scene-note">バトルにつれていく 6たいを えらぼう！</div>
-      <div id="team-grid" class="roster-grid"></div>
+      <div id="team-tabs" style="display:flex;gap:5px;justify-content:center;margin-bottom:6px"></div>
+      <div class="scene-note">＋わくを タップして ポケモンを いれよう（6たい）</div>
+      <div id="team-six"></div>
       <div id="team-bottom">
-        <div id="team-tabs" style="display:flex;gap:5px;justify-content:center;margin-bottom:6px"></div>
         <div id="item-warn"></div>
-        <div id="team-slots"></div>
         <div id="team-actions">
           <button id="team-go" class="primary-btn" disabled>バトルへ ▶</button>
           <button id="team-random" class="primary-btn" style="font-size:13px;padding:12px 14px">おまかせ</button>
@@ -348,6 +384,7 @@
       <div id="move-menu" class="hidden"></div>
     </div>
 
+    <div id="picker-modal" class="hidden"></div>
     <div id="party-modal" class="hidden"></div>
   </div>
 </div>
@@ -441,6 +478,15 @@ const MOVES = {
   rocktomb:{name:"がんせきふうじ",type:"rock",cat:"phys",power:60,pp:15,acc:95,target:{spe:-1}},
   uturn:{name:"とんぼがえり",type:"bug",cat:"phys",power:70,pp:20,acc:100,contact:true},
   dragondarts:{name:"ドラゴンアロー",type:"dragon",cat:"phys",power:100,pp:10,acc:100},
+  flamecharge:{name:"ニトロチャージ",type:"fire",cat:"phys",power:50,pp:20,acc:100,contact:true,self:{spe:1}},
+  scaleshot:{name:"スケイルショット",type:"dragon",cat:"phys",power:75,pp:20,acc:90,self:{def:-1,spe:1}},
+  psychocut:{name:"サイコカッター",type:"psychic",cat:"phys",power:70,pp:20,acc:100,highCrit:true},
+  poisonjab:{name:"どくづき",type:"poison",cat:"phys",power:80,pp:20,acc:100,contact:true,sec:{status:"psn",chance:30}},
+  xscissor:{name:"シザークロス",type:"bug",cat:"phys",power:80,pp:15,acc:100,contact:true},
+  irontail:{name:"アイアンテール",type:"steel",cat:"phys",power:100,pp:15,acc:75,contact:true},
+  acrobatics:{name:"アクロバット",type:"flying",cat:"phys",power:55,pp:15,acc:100,contact:true,acro:true},
+  dualwingbeat:{name:"ダブルウイング",type:"flying",cat:"phys",power:80,pp:10,acc:90,contact:true},
+  highjumpkick:{name:"とびひざげり",type:"fighting",cat:"phys",power:130,pp:10,acc:90,contact:true,crash:true},
 
   flamethrower:{name:"かえんほうしゃ",type:"fire",cat:"spec",power:90,pp:15,acc:100,sec:{status:"brn",chance:10}},
   fireblast:{name:"だいもんじ",type:"fire",cat:"spec",power:110,pp:5,acc:85,sec:{status:"brn",chance:10}},
@@ -469,6 +515,12 @@ const MOVES = {
   icebeam:{name:"れいとうビーム",type:"ice",cat:"spec",power:90,pp:10,acc:100,sec:{status:"frz",chance:10}},
   watershuriken:{name:"みずしゅりけん",type:"water",cat:"spec",power:45,pp:20,acc:100,prio:1},
   scald:{name:"ねっとう",type:"water",cat:"spec",power:80,pp:15,acc:100,sec:{status:"brn",chance:30}},
+  solarbeam:{name:"ソーラービーム",type:"grass",cat:"spec",power:120,pp:10,acc:100,charge:true,chargeWeather:"sun"},
+  electroshot:{name:"エレクトロビーム",type:"electric",cat:"spec",power:130,pp:10,acc:100,charge:true,chargeWeather:"rain",chargeBoost:{spa:1}},
+  energyball:{name:"エナジーボール",type:"grass",cat:"spec",power:90,pp:10,acc:100},
+  gigadrain:{name:"ギガドレイン",type:"grass",cat:"spec",power:75,pp:10,acc:100,drain:true},
+  blizzard:{name:"ふぶき",type:"ice",cat:"spec",power:110,pp:5,acc:70,sec:{status:"frz",chance:10}},
+  earthpower:{name:"だいちのちから",type:"ground",cat:"spec",power:90,pp:10,acc:100},
   torchsong:{name:"フレアソング",type:"fire",cat:"spec",power:80,pp:10,acc:100,self:{spa:1}},
   electroweb:{name:"エレキネット",type:"electric",cat:"spec",power:55,pp:15,acc:95,target:{spe:-1}},
 
@@ -581,14 +633,14 @@ const STATUS_INFO = {
 /* ===== 図鑑（21体） ===== */
 const SPECIES = {
   garchomp:{name:"ガブリアス",types:["dragon","ground"],base:[108,130,95,80,85,102],abilities:["roughskin"],
-    pool:["earthquake","dragonclaw","outrage","stoneedge","firefang","crunch","ironhead","fireblast","swordsdance","stealthrock"],
+    pool:["earthquake","dragonclaw","outrage","stoneedge","scaleshot","firefang","crunch","ironhead","swordsdance","stealthrock"],
     defPts:{atk:32,spe:32,hp:2},defItem:"lifeorb",defNature:"jolly",img:"garchomp",
     megas:[{id:"garchompMega",name:"メガガブリアス",stone:"ガブリアスナイト",base:[108,170,115,120,95,92],types:["dragon","ground"],ability:"sandforce",img:"garchomp-mega"}]},
   mimikyu:{name:"ミミッキュ",types:["ghost","fairy"],base:[55,90,80,50,105,96],abilities:["disguise"],
     pool:["playrough","shadowclaw","shadowsneak","woodhammer","thunderbolt","shadowball","swordsdance"],
     defPts:{atk:32,spe:32,hp:2},defItem:"lifeorb",defNature:"jolly",img:"mimikyu"},
   charizard:{name:"リザードン",types:["fire","flying"],base:[78,84,78,109,85,100],abilities:["blaze","solarpower"],
-    pool:["flamethrower","fireblast","airslash","dragonclaw","dragonpulse","earthquake","flareblitz","sunnyday","roost"],
+    pool:["flamethrower","fireblast","airslash","dragonclaw","earthquake","flareblitz","solarbeam","flamecharge","dragondance","sunnyday","roost"],
     defPts:{spa:32,spe:32,hp:2},defItem:"stone:charizardMegaY",defNature:"timid",img:"charizard",
     megas:[{id:"charizardMegaX",name:"メガリザードンX",stone:"リザードナイトX",base:[78,130,111,130,85,100],types:["fire","dragon"],ability:"toughclaws",img:"charizard-megax"},
            {id:"charizardMegaY",name:"メガリザードンY",stone:"リザードナイトY",base:[78,104,78,159,115,100],types:["fire","flying"],ability:"drought",img:"charizard-megay"}]},
@@ -600,7 +652,7 @@ const SPECIES = {
     defPts:{atk:32,hp:32,spd:2},defItem:"stone:metagrossMega",defNature:"adamant",img:"metagross",
     megas:[{id:"metagrossMega",name:"メガメタグロス",stone:"メタグロスナイト",base:[80,145,150,105,110,110],types:["steel","psychic"],ability:"toughclaws",img:"metagross-mega"}]},
   archaludon:{name:"ブリジュラス",types:["steel","dragon"],base:[90,105,130,125,65,85],abilities:["stamina","sturdy"],
-    pool:["flashcannon","dracometeor","thunderbolt","focusblast","dragonpulse","bodypress","irondefense"],
+    pool:["flashcannon","dracometeor","thunderbolt","electroshot","focusblast","dragonpulse","bodypress","irondefense","stealthrock"],
     defPts:{spa:32,hp:32,def:2},defItem:"leftovers",defNature:"modest",img:"archaludon"},
   incineroar:{name:"ガオガエン",types:["fire","dark"],base:[95,115,90,80,90,60],abilities:["intimidate","blaze"],
     pool:["flareblitz","darklariat","crosschop","earthquake","knockoff","flamethrower","willowisp","roar"],
@@ -699,7 +751,7 @@ function makeMon(entry) {
     pts: entry.pts, img: sp.img, isMega: false, megaAura: false,
     stages: {atk:0,def:0,spa:0,spd:0,spe:0}, choiceLock: null, disguiseBusted: false,
     status: null, sleepTurns: 0, flinched: false,
-    encore: null, drowsy: 0, roosting: false,
+    encore: null, drowsy: 0, roosting: false, charging: null,
     moves: entry.moves.map((k) => ({ key: k, pp: MOVES[k].pp })),
   };
 }
@@ -834,67 +886,26 @@ const SONGS = {
     ],
   },
   battle: {
-    bpm: 178, beats: 32,
+    bpm: 172, beats: 32,
     intro: {
       beats: 4,
       tracks: [
-        { wave: "square", vol: .04, fat: true, notes: [
-          ["E4",.25],["G4",.25],["B4",.25],["E5",.25],["G5",.25],["B5",.25],["E6",.25],["B5",.25],
-          ["A5",.25],["Ab5",.25],["G5",.25],["F#5",.25],["F5",.25],["E5",.25],["D#5",.25],["B4",.25],
+        { wave: "sawtooth", vol: .02, fat: true, notes: [
+          ["E4",.25],["G4",.25],["B4",.25],["E5",.25],["G5",.25],["B5",.25],["E6",.5],
+          ["D6",.25],["B5",.25],["A5",.25],["G5",.25],["F#5",.5],["B4",.5],
         ]},
-        { wave: "triangle", vol: .08, notes: [
-          ["E2",.25],["E2",.25],["E3",.25],["E2",.25],["E2",.25],["E3",.25],["E2",.25],["E3",.25],
-          ["D2",.25],["D2",.25],["D3",.25],["D2",.25],["B1",.25],["B2",.25],["B1",.25],["B2",.25],
+        { wave: "triangle", vol: .085, notes: [
+          ["E2",.25],["E2",.25],["E2",.25],["E2",.25],["E2",.25],["E2",.25],["E2",.25],["E2",.25],
+          ["D2",.25],["D2",.25],["D2",.25],["D2",.25],["B1",.5],["B1",.5],
         ]},
       ],
       drums: { kickEvery: .5, snareEvery: 1, snareOffset: 3.5 },
     },
     drums: { kickEvery: 1, snareEvery: 2, snareOffset: 1, hat: true, hatEvery: .25, hatOffset: .125 },
     tracks: [
-      // リード（アンセム調Aメロ→駆け上がるBメロ）
-      { wave: "square", vol: .03, fat: true, notes: [
-        ["B4",.5],["E5",.5],["G5",.5],["B5",.5],["A5",.5],["G5",.5],["E5",1],
-        ["G5",.5],["E5",.5],["G5",.5],["C6",.5],["B5",.75],["A5",.25],["G5",1],
-        ["B5",.5],["G5",.5],["B5",.5],["D6",.5],["C6",.5],["B5",.5],["A5",1],
-        ["F#5",.5],["A5",.5],["D#5",.5],["F#5",.5],["B5",2],
-        ["C6",.5],["B5",.5],["A5",.5],["B5",.5],["C6",.5],["D6",.5],["E6",1],
-        ["D6",.5],["C6",.5],["B5",.5],["C6",.5],["D6",.75],["C6",.25],["B5",1],
-        ["A5",.5],["B5",.5],["C6",.5],["D6",.5],["E6",.5],["D6",.5],["C6",1],
-        ["B5",.25],["C6",.25],["B5",.25],["A5",.25],["G5",.5],["F#5",.5],["E5",1],["B5",1],
-      ]},
-      // ベース（シンコペ8分＋オクターブ）
-      { wave: "triangle", vol: .08, notes: [
-        ["E2",.5],["E3",.5],["E2",.5],["E3",.5],["C2",.5],["C3",.5],["C2",.5],["C3",.5],
-        ["G2",.5],["G3",.5],["G2",.5],["G3",.5],["D2",.5],["D3",.5],["D2",.5],["D3",.5],
-        ["E2",.5],["E3",.5],["E2",.5],["E3",.5],["C2",.5],["C3",.5],["C2",.5],["C3",.5],
-        ["A1",.5],["A2",.5],["A1",.5],["A2",.5],["B1",.5],["B2",.5],["B1",.5],["B2",.5],
-        ["A1",.5],["A2",.5],["A1",.5],["A2",.5],["C2",.5],["C3",.5],["C2",.5],["C3",.5],
-        ["D2",.5],["D3",.5],["D2",.5],["D3",.5],["E2",.5],["E3",.5],["E2",.5],["E3",.5],
-        ["A1",.5],["A2",.5],["A1",.5],["A2",.5],["C2",.5],["C3",.5],["C2",.5],["C3",.5],
-        ["B1",.5],["B2",.5],["B1",.5],["B2",.5],["B1",.5],["B2",.5],["B1",.5],["B2",.5],
-      ]},
-      // コードスタブ1（裏打ち・3度）
-      { wave: "square", vol: .011, notes: [
-        [null,.5],["G4",.5],[null,.5],["G4",.5],[null,.5],["E4",.5],[null,.5],["E4",.5],
-        [null,.5],["B4",.5],[null,.5],["B4",.5],[null,.5],["F#4",.5],[null,.5],["F#4",.5],
-        [null,.5],["G4",.5],[null,.5],["G4",.5],[null,.5],["E4",.5],[null,.5],["E4",.5],
-        [null,.5],["C5",.5],[null,.5],["C5",.5],[null,.5],["D#5",.5],[null,.5],["D#5",.5],
-        [null,.5],["C5",.5],[null,.5],["C5",.5],[null,.5],["E4",.5],[null,.5],["E4",.5],
-        [null,.5],["F#4",.5],[null,.5],["F#4",.5],[null,.5],["G4",.5],[null,.5],["G4",.5],
-        [null,.5],["C5",.5],[null,.5],["C5",.5],[null,.5],["E4",.5],[null,.5],["E4",.5],
-        [null,.5],["D#5",.5],[null,.5],["D#5",.5],[null,.5],["F#5",.5],[null,.5],["F#5",.5],
-      ]},
-      // コードスタブ2（裏打ち・5度）
-      { wave: "square", vol: .011, notes: [
-        [null,.5],["B4",.5],[null,.5],["B4",.5],[null,.5],["G4",.5],[null,.5],["G4",.5],
-        [null,.5],["D5",.5],[null,.5],["D5",.5],[null,.5],["A4",.5],[null,.5],["A4",.5],
-        [null,.5],["B4",.5],[null,.5],["B4",.5],[null,.5],["G4",.5],[null,.5],["G4",.5],
-        [null,.5],["E5",.5],[null,.5],["E5",.5],[null,.5],["F#5",.5],[null,.5],["F#5",.5],
-        [null,.5],["E5",.5],[null,.5],["E5",.5],[null,.5],["G4",.5],[null,.5],["G4",.5],
-        [null,.5],["A4",.5],[null,.5],["A4",.5],[null,.5],["B4",.5],[null,.5],["B4",.5],
-        [null,.5],["E5",.5],[null,.5],["E5",.5],[null,.5],["G4",.5],[null,.5],["G4",.5],
-        [null,.5],["F#5",.5],[null,.5],["F#5",.5],[null,.5],["A5",.5],[null,.5],["A5",.5],
-      ]},
+      { wave: "sawtooth", vol: .02, fat: true, notes: [["E5",1.5],["G5",0.5],["B5",1],["A5",0.5],["G5",0.5],["A5",1.5],["G5",0.5],["E5",2],["D5",1],["E5",0.5],["G5",0.5],["A5",1],["B5",1],["D6",1.5],["B5",0.5],["A5",1],["B5",1],["E6",1],["D6",0.5],["B5",0.5],["C6",1],["B5",0.5],["A5",0.5],["B5",1.5],["A5",0.5],["G5",1],["A5",1],["C6",1],["B5",0.5],["A5",0.5],["G5",1],["E5",1],["F#5",1],["G5",0.5],["A5",0.5],["B5",2]] },
+      { wave: "triangle", vol: .085, notes: [["E2",0.75],["E2",0.25],["E3",0.5],["E2",0.5],["E2",0.75],["E2",0.25],["E3",0.5],["E2",0.5],["C2",0.75],["C2",0.25],["C3",0.5],["C2",0.5],["C2",0.75],["C2",0.25],["C3",0.5],["C2",0.5],["D2",0.75],["D2",0.25],["D3",0.5],["D2",0.5],["D2",0.75],["D2",0.25],["D3",0.5],["D2",0.5],["B2",0.75],["B2",0.25],["B3",0.5],["B2",0.5],["B2",0.75],["B2",0.25],["B3",0.5],["B2",0.5],["E2",0.75],["E2",0.25],["E3",0.5],["E2",0.5],["E2",0.75],["E2",0.25],["E3",0.5],["E2",0.5],["C2",0.75],["C2",0.25],["C3",0.5],["C2",0.5],["C2",0.75],["C2",0.25],["C3",0.5],["C2",0.5],["A2",0.75],["A2",0.25],["A3",0.5],["A2",0.5],["A2",0.75],["A2",0.25],["A3",0.5],["A2",0.5],["B2",0.75],["B2",0.25],["B3",0.5],["B2",0.5],["B2",0.75],["B2",0.25],["B3",0.5],["B2",0.5]] },
+      { wave: "square", vol: .012, notes: [["E4",0.5],["B4",0.5],["E4",0.5],["B4",0.5],["E4",0.5],["B4",0.5],["E4",0.5],["B4",0.5],["C4",0.5],["G4",0.5],["C4",0.5],["G4",0.5],["C4",0.5],["G4",0.5],["C4",0.5],["G4",0.5],["D4",0.5],["A4",0.5],["D4",0.5],["A4",0.5],["D4",0.5],["A4",0.5],["D4",0.5],["A4",0.5],["B4",0.5],["F#4",0.5],["B4",0.5],["F#4",0.5],["B4",0.5],["F#4",0.5],["B4",0.5],["F#4",0.5],["E4",0.5],["B4",0.5],["E4",0.5],["B4",0.5],["E4",0.5],["B4",0.5],["E4",0.5],["B4",0.5],["C4",0.5],["G4",0.5],["C4",0.5],["G4",0.5],["C4",0.5],["G4",0.5],["C4",0.5],["G4",0.5],["A4",0.5],["E4",0.5],["A4",0.5],["E4",0.5],["A4",0.5],["E4",0.5],["A4",0.5],["E4",0.5],["B4",0.5],["F#4",0.5],["B4",0.5],["F#4",0.5],["B4",0.5],["F#4",0.5],["B4",0.5],["F#4",0.5]] },
     ],
   },
   victory: {
@@ -1047,39 +1058,75 @@ function buildBoxScene() {
   });
 }
 
-function buildTeamScene() {
-  const grid = $("team-grid");
-  grid.innerHTML = "";
-  Object.keys(SPECIES).forEach((key) => {
+// タイプかぶりを避けて6体選ぶ（フェアリーはPT1体、みたいなバランス）
+function pickBalancedTeam(excludeKeys = []) {
+  const picked = [];
+  const usedTypes = new Set();
+  let pool = Object.keys(SPECIES).filter((k) => !excludeKeys.includes(k));
+  while (picked.length < 6 && pool.length) {
+    // まだ使ってないタイプだけの候補を優先
+    let cands = pool.filter((k) => !SPECIES[k].types.some((t) => usedTypes.has(t)));
+    if (!cands.length) cands = pool.filter((k) => SPECIES[k].types.filter((t) => usedTypes.has(t)).length <= 1);
+    if (!cands.length) cands = pool;
+    const key = cands[Math.floor(Math.random() * cands.length)];
+    picked.push(key);
+    SPECIES[key].types.forEach((t) => usedTypes.add(t));
+    pool = pool.filter((k) => k !== key);
+  }
+  return picked;
+}
+function dedupeTeamItems(keys) {
+  const used = new Set();
+  const prefs = ["lifeorb","choiceband","choicespecs","choicescarf","focussash","leftovers","sitrusberry","assaultvest","weaknesspolicy","flameorb","none"];
+  keys.forEach((k) => {
+    const b = game.builds[k];
+    if (b.item !== "none" && used.has(b.item)) b.item = prefs.find((p) => p === "none" || !used.has(p)) || "none";
+    if (b.item !== "none") used.add(b.item);
+  });
+  saveBuilds();
+}
+// メンバー追加ピッカー
+function openPicker() {
+  const modal = $("picker-modal");
+  modal.innerHTML = "";
+  modal.classList.remove("hidden");
+  const panel = document.createElement("div");
+  panel.id = "picker-panel";
+  panel.addEventListener("click", (e) => e.stopPropagation());
+  panel.innerHTML = `<h3>チームに いれる ポケモンを えらぼう</h3>`;
+  const grid = document.createElement("div");
+  grid.id = "picker-grid";
+  Object.keys(SPECIES).filter((k) => !game.team.includes(k)).forEach((key) => {
     const card = document.createElement("div");
     card.className = "card";
-    card.dataset.key = key;
-    card.innerHTML = monCard(key);
+    card.innerHTML = `<div class="imgwrap"><img src="${spritePath(key,false)}"></div><div class="nm">${SPECIES[key].name}</div><div>${SPECIES[key].types.map(typeBadge).join("")}</div>`;
     card.addEventListener("click", (e) => {
       e.stopPropagation();
-      const i = game.team.indexOf(key);
-      if (i >= 0) { game.team.splice(i, 1); sfx.unpick(); }
-      else if (game.team.length < 6) { game.team.push(key); sfx.pick(); }
+      if (game.team.length < 6) { game.team.push(key); sfx.pick(); }
+      modal.classList.add("hidden");
       renderTeamState();
     });
     grid.appendChild(card);
   });
+  panel.appendChild(grid);
+  const close = document.createElement("button");
+  close.className = "primary-btn";
+  close.style.marginTop = "10px";
+  close.textContent = "とじる";
+  close.addEventListener("click", (e) => { e.stopPropagation(); sfx.unpick(); modal.classList.add("hidden"); });
+  panel.appendChild(close);
+  modal.appendChild(panel);
+}
+function buildTeamScene() {
+  // おまかせ: 押すたびにタイプバランス重視で総入れ替え
   $("team-random").onclick = (e) => {
     e.stopPropagation();
-    const rest = Object.keys(SPECIES).filter((k) => !game.team.includes(k));
-    while (game.team.length < 6 && rest.length) game.team.push(rest.splice(Math.floor(Math.random()*rest.length),1)[0]);
-    // もちものが かぶらないように自動調整
-    const used = new Set();
-    const prefs = ["lifeorb","choiceband","choicespecs","choicescarf","focussash","leftovers","sitrusberry","assaultvest","weaknesspolicy","flameorb","none"];
-    game.team.forEach((k) => {
-      const b = game.builds[k];
-      if (b.item !== "none" && used.has(b.item)) {
-        b.item = prefs.find((p) => p === "none" || !used.has(p)) || "none";
-      }
-      if (b.item !== "none") used.add(b.item);
-    });
-    saveBuilds();
-    sfx.pick(); renderTeamState();
+    const picked = pickBalancedTeam();
+    game.team.length = 0;
+    picked.forEach((k) => game.team.push(k));
+    dedupeTeamItems(game.team);
+    sfx.pick();
+    renderTeamState();
   };
   $("team-go").onclick = (e) => {
     e.stopPropagation();
@@ -1104,22 +1151,13 @@ function dupItems() {
 }
 
 function renderTeamState() {
-  document.querySelectorAll("#team-grid .card").forEach((card) => {
-    const idx = game.team.indexOf(card.dataset.key);
-    card.classList.toggle("picked", idx >= 0);
-    let num = card.querySelector(".pick-num");
-    if (idx >= 0) {
-      if (!num) { num = document.createElement("div"); num.className = "pick-num"; card.appendChild(num); }
-      num.textContent = idx + 1;
-    } else if (num) num.remove();
-  });
   // チーム①〜③タブ
   const tabs = $("team-tabs");
   tabs.innerHTML = "";
   [1, 2, 3].forEach((n) => {
     const b = document.createElement("button");
     b.className = "tab-btn" + (game.activeTeam === n ? " on" : "");
-    b.style.cssText = "flex:none;padding:6px 16px;font-size:12px";
+    b.style.cssText = "flex:none;padding:8px 18px;font-size:13px";
     b.textContent = `チーム${["①","②","③"][n-1]}（${game.teams[n].length}）`;
     b.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -1130,24 +1168,40 @@ function renderTeamState() {
     });
     tabs.appendChild(b);
   });
-  // チームの6体（タップでカスタマイズ）
-  const slots = $("team-slots");
-  slots.innerHTML = "";
+  // 6体の大きいスロット（タップ=カスタム / ✕=はずす / 空わく=ついか）
+  const six = $("team-six");
+  six.innerHTML = "";
   for (let i = 0; i < 6; i++) {
-    const s = document.createElement("div");
-    s.className = "slot";
     const key = game.team[i];
+    const s = document.createElement("div");
     if (key) {
-      s.innerHTML = `<img src="${spritePath(key,false)}"><div>${SPECIES[key].name}</div>`;
-      s.style.cursor = "pointer";
-      s.style.borderStyle = "solid";
+      const b = game.builds[key];
+      s.className = "bigslot";
+      s.innerHTML = `<img src="${spritePath(key,false)}">
+        <div class="bs-nm">${SPECIES[key].name}</div>
+        <div class="bs-lv">Lv.50 ${SPECIES[key].types.map(typeBadge).join("")}</div>
+        <div class="bs-it">${itemLabel(b)}</div>`;
+      const x = document.createElement("div");
+      x.className = "bs-x";
+      x.textContent = "✕";
+      x.addEventListener("click", (e) => {
+        e.stopPropagation();
+        sfx.unpick();
+        game.team.splice(i, 1);
+        renderTeamState();
+      });
+      s.appendChild(x);
       s.addEventListener("click", (e) => { e.stopPropagation(); sfx.select(); openCustomScene(game.builds[key], "team"); });
+    } else {
+      s.className = "bigslot empty";
+      s.textContent = "＋ ついか";
+      s.addEventListener("click", (e) => { e.stopPropagation(); sfx.select(); openPicker(); });
     }
-    slots.appendChild(s);
+    six.appendChild(s);
   }
   saveTeams();
   const dups = dupItems();
-  $("item-warn").textContent = dups.length ? `⚠ もちものがかぶってるよ: ${dups.join("、")}（したの6体をタップして変えてね）` : "";
+  $("item-warn").textContent = dups.length ? `⚠ もちものがかぶってるよ: ${dups.join("、")}（ポケモンをタップして変えてね）` : "";
   $("team-go").disabled = game.team.length !== 6 || dups.length > 0;
 }
 
@@ -1315,9 +1369,8 @@ function enemyAssignItems(team) {
 /* ===== みせあい ===== */
 function startPreview(netMode) {
   if (!netMode) {
-    const cp = Object.keys(SPECIES);
-    game.enemyTeam = [];
-    while (game.enemyTeam.length < 6) game.enemyTeam.push(randomEnemyEntry(cp.splice(Math.floor(Math.random() * cp.length), 1)[0]));
+    // 敵チームもタイプバランス重視で編成
+    game.enemyTeam = pickBalancedTeam().map((k) => randomEnemyEntry(k));
     enemyAssignItems(game.enemyTeam);
   }
   game.playerPicks = [];
@@ -1483,6 +1536,7 @@ function effectiveMove(attacker, key) {
   mv.key = key;
   if (attacker.ability === "pixilate" && mv.type === "normal" && mv.cat !== "status") { mv.type = "fairy"; mv.pixilated = true; }
   if (attacker.ability === "aerilate" && mv.type === "normal" && mv.cat !== "status") { mv.type = "flying"; mv.pixilated = true; }
+  if (mv.acro && attacker.item === "none") mv.power = 110;   // アクロバット: 道具なしで倍増
   return mv;
 }
 function effAtkStat(a, move, isCrit, side, ignoreStage) {
@@ -1750,11 +1804,33 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
     await say(`${attacker.name}は ${TYPE_INFO[move.type].jp}タイプに なった！`, { noWait: true });
   }
 
+  const defenderSide = otherSide(attackerSide);
+
+  // ためわざ（ソーラービーム/エレクトロビーム。対応天候なら即発射）
+  if (move.charge) {
+    if (attacker.charging === moveSlot.key) {
+      attacker.charging = null;   // ため完了 → 発射
+    } else if (battle.weather !== move.chargeWeather) {
+      attacker.charging = moveSlot.key;
+      moveSlot.pp++;   // ためターンはPP消費しない
+      await say(`${attacker.name}は エネルギーを ためている！`);
+      if (move.chargeBoost) for (const [st, d] of Object.entries(move.chargeBoost)) await applyStatChange(attacker, attackerSide, st, d);
+      return null;
+    }
+  }
+
   const noguard = attacker.ability === "noguard" || defender.ability === "noguard";
   const perfectRain = move.rainPerfect && battle.weather === "rain";
-  if (move.acc !== null && !noguard && !perfectRain && battleRandom() * 100 >= move.acc) { await say("しかし はずれた！"); return null; }
-
-  const defenderSide = otherSide(attackerSide);
+  if (move.acc !== null && !noguard && !perfectRain && battleRandom() * 100 >= move.acc) {
+    await say("しかし はずれた！");
+    if (move.crash) {   // とびひざげり: はずすと反動
+      attacker.hp = Math.max(0, attacker.hp - Math.floor(attacker.maxHp / 2));
+      setHpBar(attacker, attackerSide);
+      await say(`${attacker.name}は ころんで ダメージを うけた！`);
+      if (attacker.hp <= 0) { await faintOut(attacker, attackerSide); return "attacker"; }
+    }
+    return null;
+  }
 
   // 変化技
   if (move.cat === "status") {
@@ -2037,7 +2113,7 @@ function showPartyModal(forced) {
     modal.appendChild(panel);
   });
 }
-function resetOnSwitch(m) { m.stages = {atk:0,def:0,spa:0,spd:0,spe:0}; m.choiceLock = null; m.types = [...m.baseTypes]; m.flinched = false; m.encore = null; m.drowsy = 0; m.roosting = false; }
+function resetOnSwitch(m) { m.stages = {atk:0,def:0,spa:0,spd:0,spe:0}; m.choiceLock = null; m.types = [...m.baseTypes]; m.flinched = false; m.encore = null; m.drowsy = 0; m.roosting = false; m.charging = null; }
 function enemyChooseNext() {
   const p = activeP();
   let best = -1, bs = -1;
@@ -2150,6 +2226,12 @@ function showMoveMenu(m, side) {
   });
 }
 async function playerCommand() {
+  // ためわざ中は自動で発射
+  if (activeP().charging) {
+    const slot = activeP().moves.find((s) => s.key === activeP().charging);
+    if (slot) return { kind: "fight", slot, mega: false };
+    activeP().charging = null;
+  }
   while (true) {
     $("msg-text").textContent = `${activeP().name}は どうする？`;
     const cmd = await showCmdMenu();
@@ -2176,6 +2258,7 @@ async function playerCommand() {
 }
 function enemyChooseMove() {
   const e = activeE(), p = activeP();
+  if (e.charging) { const s = e.moves.find((m) => m.key === e.charging); if (s) return s; e.charging = null; }
   let usable = e.moves.filter((m) => m.pp > 0);
   if (e.choiceLock) usable = usable.filter((m) => m.key === e.choiceLock);
   if (e.encore) usable = usable.filter((m) => m.key === e.encore.moveKey);
@@ -2199,6 +2282,7 @@ function enemyChooseMove() {
       if (mv.roost || mv.heal) s = e.hp < e.maxHp * .5 ? 75 : 1;
     } else {
       s = mv.power * (e.types.includes(mv.type) ? 1.5 : 1) * typeMultiplier(mv.type, p);
+      if (mv.charge && battle.weather !== mv.chargeWeather) s *= .4;   // ためわざは天候なしだと弱め
     }
     return { m, s: s * (.7 + Math.random() * .6) };
   });
@@ -2375,7 +2459,7 @@ $("net-btn").addEventListener("click", (e) => {
 $("net-host").addEventListener("click", (e) => { e.stopPropagation(); sfx.pick(); netHost(); });
 $("net-join").addEventListener("click", (e) => { e.stopPropagation(); sfx.pick(); netJoin(); });
 $("net-back").addEventListener("click", (e) => { e.stopPropagation(); sfx.unpick(); netReset(); showScene("team-scene"); });
-const GAME_VER = "v12";
+const GAME_VER = "v13";
 loadBuilds();
 loadTeams();
 buildTitleParade();

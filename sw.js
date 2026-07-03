@@ -1,6 +1,6 @@
 // ポケットバトル CHAMPIONS - オフラインキャッシュ
 // HTML/JSはネット優先（常に最新版）、スプライト等はキャッシュ優先（オフライン対応）
-const CACHE = "pocketbattle-v12";
+const CACHE = "pocketbattle-v13";
 const CORE = ["./index.html", "./manifest.json"];
 
 self.addEventListener("install", (e) => {
