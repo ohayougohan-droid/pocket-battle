@@ -182,7 +182,9 @@
   .pv-card.selectable { cursor: pointer; }
   .pv-card.chosen { border-color: #6fe06f; background: linear-gradient(180deg, #2f5a3f, #1e3f2c); }
   .pv-card .pick-num { position: absolute; top: -7px; left: -7px; width: 20px; height: 20px; border-radius: 50%; background: #6fe06f; color: #0a3a0a; font-size: 12px; font-weight: bold; line-height: 18px; border: 2px solid #fff; }
-  #preview-start-wrap { text-align: center; padding: 6px 0 14px; }
+  #preview-scroll { flex: 1; overflow-y: auto; min-height: 0; }
+  #preview-start-wrap { flex: none; text-align: center; padding: 8px 0 14px; }
+  #preview-start-wrap .primary-btn { font-size: 18px; padding: 12px 40px; }
 
   /* ===== バトル（縦） ===== */
   #battle-scene { background: linear-gradient(180deg, #8ec8f0 0%, #b8e0f8 40%, #7fbf6a 40%, #5ea34e 75%, #4d8a40 100%); }
@@ -356,9 +358,11 @@
 
     <!-- みせあい -->
     <div id="preview-scene" class="scene panel-scene hidden">
-      <div class="scene-note" style="margin-top:40px">あいての チームを みて バトルに だす 3たいを えらぼう！</div>
-      <div class="preview-row"><div class="rt">あいての チーム</div><div class="preview-mons" id="enemy-preview"></div></div>
-      <div class="preview-row"><div class="rt">きみの チーム（1ばんめが せんとう）</div><div class="preview-mons" id="player-preview"></div></div>
+      <div class="scene-note" style="margin-top:36px">あいての チームを みて バトルに だす 3たいを えらぼう！</div>
+      <div id="preview-scroll">
+        <div class="preview-row"><div class="rt">あいての チーム</div><div class="preview-mons" id="enemy-preview"></div></div>
+        <div class="preview-row"><div class="rt">きみの チーム（1ばんめが せんとう）</div><div class="preview-mons" id="player-preview"></div></div>
+      </div>
       <div id="preview-start-wrap"><button id="preview-start" class="primary-btn" disabled>バトルスタート！</button></div>
     </div>
 
@@ -1453,7 +1457,7 @@ function startPreview(netMode) {
     const c = document.createElement("div");
     c.className = "pv-card";
     c.innerHTML = `<img src="${spritePath(entry.key,false)}"><div class="nm">${SPECIES[entry.key].name}</div>
-      <div>${SPECIES[entry.key].types.map(typeBadge).join("")}</div><div class="it">${itemLabel(entry)}</div>`;
+      <div>${SPECIES[entry.key].types.map(typeBadge).join("")}</div>`;
     eRow.appendChild(c);
   });
   const pRow = $("player-preview");
@@ -1463,7 +1467,7 @@ function startPreview(netMode) {
     const c = document.createElement("div");
     c.className = "pv-card selectable";
     c.innerHTML = `<img src="${spritePath(key,false)}"><div class="nm">${SPECIES[key].name}</div>
-      <div>${SPECIES[key].types.map(typeBadge).join("")}</div><div class="it">${itemLabel(entry)}</div>`;
+      <div>${SPECIES[key].types.map(typeBadge).join("")}</div>`;
     c.addEventListener("click", (e) => {
       e.stopPropagation();
       const at = game.playerPicks.indexOf(idx);
@@ -2689,7 +2693,7 @@ $("battle-title-btn").addEventListener("click", async (e) => {
   netReset();
   location.reload();   // クリーンにタイトルへ（チーム・育成はセーブ済み）
 });
-const GAME_VER = "v15";
+const GAME_VER = "v16";
 loadBuilds();
 loadTeams();
 buildTitleParade();
