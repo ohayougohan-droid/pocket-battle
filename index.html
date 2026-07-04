@@ -174,7 +174,7 @@
   /* ===== みせあい ===== */
   .preview-row { background: rgba(0,0,0,.3); border: 1px solid #5666a8; border-radius: 10px; padding: 6px; margin-bottom: 8px; }
   .preview-row .rt { font-size: 12px; font-weight: bold; color: #9fc0ff; margin-bottom: 4px; }
-  .preview-mons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .preview-mons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
   .pv-card { position: relative; background: linear-gradient(180deg, #38427a, #262e5c); border: 2px solid #5666a8; border-radius: 8px; text-align: center; padding: 4px 2px; font-size: 10px; }
   .pv-card img { max-height: 50px; image-rendering: pixelated; }
   .pv-card .nm { font-weight: bold; font-size: 10px; white-space: nowrap; }
@@ -364,6 +364,7 @@
 
     <!-- バトル -->
     <div id="battle-scene" class="scene hidden">
+      <button id="battle-title-btn" style="position:absolute;top:8px;left:8px;z-index:50;background:rgba(0,0,0,.45);color:#fff;border:2px solid rgba(255,255,255,.5);border-radius:10px;font-size:11px;font-weight:bold;padding:4px 10px;cursor:pointer">🏠 タイトル</button>
       <div id="weather-ind" class="hidden"></div>
       <div id="enemy-platform" class="platform"></div>
       <div id="player-platform" class="platform"></div>
@@ -429,7 +430,7 @@ const TYPE_CHART = {
 const MOVES = {
   earthquake:{name:"じしん",type:"ground",cat:"phys",power:100,pp:10,acc:100},
   dragonclaw:{name:"ドラゴンクロー",type:"dragon",cat:"phys",power:80,pp:15,acc:100,contact:true},
-  outrage:{name:"げきりん",type:"dragon",cat:"phys",power:120,pp:10,acc:100,contact:true},
+  outrage:{name:"げきりん",type:"dragon",cat:"phys",power:120,pp:10,acc:100,contact:true,rampage:true},
   stoneedge:{name:"ストーンエッジ",type:"rock",cat:"phys",power:100,pp:5,acc:80,highCrit:true},
   rockslide:{name:"いわなだれ",type:"rock",cat:"phys",power:75,pp:10,acc:90,sec:{flinch:30}},
   firefang:{name:"ほのおのキバ",type:"fire",cat:"phys",power:65,pp:15,acc:95,contact:true,sec:{status:"brn",chance:10}},
@@ -440,8 +441,8 @@ const MOVES = {
   shadowsneak:{name:"かげうち",type:"ghost",cat:"phys",power:40,pp:30,acc:100,prio:1,contact:true},
   woodhammer:{name:"ウッドハンマー",type:"grass",cat:"phys",power:120,pp:15,acc:100,recoil:true,contact:true},
   flowertrick:{name:"トリックフラワー",type:"grass",cat:"phys",power:70,pp:10,acc:100,alwaysCrit:true},
-  suckerpunch:{name:"ふいうち",type:"dark",cat:"phys",power:70,pp:5,acc:100,prio:1,contact:true},
-  knockoff:{name:"はたきおとす",type:"dark",cat:"phys",power:65,pp:20,acc:100,contact:true},
+  suckerpunch:{name:"ふいうち",type:"dark",cat:"phys",power:70,pp:5,acc:100,prio:1,contact:true,suckerCheck:true},
+  knockoff:{name:"はたきおとす",type:"dark",cat:"phys",power:65,pp:20,acc:100,contact:true,knockOff:true},
   nightslash:{name:"つじぎり",type:"dark",cat:"phys",power:70,pp:15,acc:100,highCrit:true,contact:true},
   meteormash:{name:"コメットパンチ",type:"steel",cat:"phys",power:90,pp:10,acc:90,contact:true},
   zenheadbutt:{name:"しねんのずつき",type:"psychic",cat:"phys",power:80,pp:15,acc:90,contact:true,sec:{flinch:20}},
@@ -464,6 +465,7 @@ const MOVES = {
   iciclecrash:{name:"つららおとし",type:"ice",cat:"phys",power:85,pp:10,acc:90,sec:{flinch:30}},
   iceshard:{name:"こおりのつぶて",type:"ice",cat:"phys",power:40,pp:30,acc:100,prio:1},
   wickedblow:{name:"あんこくきょうだ",type:"dark",cat:"phys",power:75,pp:5,acc:100,alwaysCrit:true,contact:true},
+  surgingstrikes:{name:"すいりゅうれんだ",type:"water",cat:"phys",power:25,pp:5,acc:100,alwaysCrit:true,contact:true,hits:3},
   wavecrash:{name:"ウェーブタックル",type:"water",cat:"phys",power:120,pp:10,acc:100,recoil:true,contact:true},
   aquajet:{name:"アクアジェット",type:"water",cat:"phys",power:40,pp:20,acc:100,prio:1,contact:true},
   waterfall:{name:"たきのぼり",type:"water",cat:"phys",power:80,pp:15,acc:100,contact:true,sec:{flinch:20}},
@@ -485,7 +487,7 @@ const MOVES = {
   xscissor:{name:"シザークロス",type:"bug",cat:"phys",power:80,pp:15,acc:100,contact:true},
   irontail:{name:"アイアンテール",type:"steel",cat:"phys",power:100,pp:15,acc:75,contact:true},
   acrobatics:{name:"アクロバット",type:"flying",cat:"phys",power:55,pp:15,acc:100,contact:true,acro:true},
-  dualwingbeat:{name:"ダブルウイング",type:"flying",cat:"phys",power:80,pp:10,acc:90,contact:true},
+  dualwingbeat:{name:"ダブルウイング",type:"flying",cat:"phys",power:40,pp:10,acc:90,contact:true,hits:2},
   highjumpkick:{name:"とびひざげり",type:"fighting",cat:"phys",power:130,pp:10,acc:90,contact:true,crash:true},
 
   flamethrower:{name:"かえんほうしゃ",type:"fire",cat:"spec",power:90,pp:15,acc:100,sec:{status:"brn",chance:10}},
@@ -693,9 +695,12 @@ const SPECIES = {
     pool:["bravebird","doubleedge","closecombat","quickattack","aerialace"],
     defPts:{atk:32,spe:32,hp:2},defItem:"stone:staraptorMega",defNature:"jolly",img:"staraptor",
     megas:[{id:"staraptorMega",name:"メガムクホーク",stone:"ムクホークナイト",base:[85,140,100,60,90,110],types:["normal","flying"],ability:"contrary",img:null}]},
-  urshifu:{name:"ウーラオス",types:["fighting","dark"],base:[100,130,100,63,60,97],abilities:["unseenfist"],
-    pool:["wickedblow","closecombat","suckerpunch","ironhead","stoneedge","firepunch","bulkup"],
-    defPts:{atk:32,spe:32,hp:2},defItem:"lifeorb",defNature:"jolly",img:"urshifu"},
+  urshifu:{name:"ウーラオス(いちげき)",types:["fighting","dark"],base:[100,130,100,63,60,97],abilities:["unseenfist"],
+    pool:["wickedblow","closecombat","suckerpunch","ironhead","stoneedge","firepunch","bulkup","uturn"],
+    defPts:{atk:32,spe:32,hp:2},defItem:"choiceband",defNature:"jolly",img:"urshifu"},
+  urshifurapid:{name:"ウーラオス(れんげき)",types:["fighting","water"],base:[100,130,100,63,60,97],abilities:["unseenfist"],
+    pool:["surgingstrikes","closecombat","aquajet","icepunch","stoneedge","uturn","bulkup"],
+    defPts:{atk:32,spe:32,hp:2},defItem:"choicescarf",defNature:"jolly",img:"urshifu-rapidstrike"},
   basculegion:{name:"イダイトウ",types:["water","ghost"],base:[120,112,65,80,75,78],abilities:["adaptability","swiftswim"],
     pool:["wavecrash","waterfall","aquajet","crunch","shadowball","raindance"],
     defPts:{atk:32,spe:32,hp:2},defItem:"choiceband",defNature:"adamant",img:"basculegion"},
@@ -729,7 +734,7 @@ const BUILD_OVERRIDES = {
   garchomp:    { nature:"jolly",   item:"focussash",  pts:_AS, moves:["earthquake","stealthrock","outrage","scaleshot"] },
   dragonite:   { nature:"modest",  item:"stone:dragoniteMega", pts:_CS, moves:["dracometeor","flamethrower","extremespeed","roost"] },
   gholdengo:   { nature:"modest",  item:"choicescarf", pts:_CS, moves:["shadowball","makeitrain","nastyplot","recover"] },
-  mimikyu:     { nature:"jolly",   item:"lifeorb",    pts:_AS, moves:["playrough","shadowclaw","shadowsneak","swordsdance"] },
+  mimikyu:     { nature:"adamant", item:"lifeorb",    pts:_AS, moves:["playrough","shadowsneak","swordsdance","shadowclaw"] },
   charizard:   { nature:"timid",   item:"stone:charizardMegaY", pts:_CS, moves:["fireblast","solarbeam","airslash","roost"] },
   archaludon:  { nature:"modest",  item:"leftovers",  pts:_HC, moves:["flashcannon","dracometeor","bodypress","stealthrock"] },
   gengar:      { nature:"timid",   item:"stone:gengarMega", pts:_CS, moves:["shadowball","sludgebomb","focusblast","nastyplot"] },
@@ -744,6 +749,7 @@ const BUILD_OVERRIDES = {
   excadrill:   { nature:"jolly",   item:"focussash",  pts:_AS, moves:["earthquake","ironhead","rockslide","swordsdance"] },
   heatran:     { nature:"modest",  item:"leftovers",  pts:_HC, moves:["flamethrower","earthpower","flashcannon","stealthrock"] },
   urshifu:     { nature:"jolly",   item:"choiceband", pts:_AS, moves:["wickedblow","closecombat","suckerpunch","uturn"] },
+  urshifurapid:{ nature:"jolly",   item:"choicescarf", pts:_AS, moves:["surgingstrikes","closecombat","aquajet","uturn"] },
   lucario:     { nature:"jolly",   item:"stone:lucarioMega", pts:_AS, moves:["swordsdance","closecombat","extremespeed","meteormash"] },
   salamence:   { nature:"jolly",   item:"stone:salamenceMega", pts:_AS, moves:["dragondance","doubleedge","earthquake","roost"] },
   gardevoir:   { nature:"timid",   item:"stone:gardevoirMega", pts:_CS, moves:["moonblast","psyshock","focusblast","calmmind"] },
@@ -755,7 +761,7 @@ const BUILD_OVERRIDES = {
   corviknight: { nature:"impish",  item:"leftovers",  pts:_HB, moves:["bravebird","bodypress","roost","irondefense"] },
   milotic:     { nature:"bold",    item:"leftovers",  pts:_HB, moves:["scald","recover","icebeam","dragonpulse"] },
   greninja:    { nature:"timid",   item:"lifeorb",    pts:_CS, moves:["hydropump","darkpulse","icebeam","watershuriken"] },
-  metagross:   { nature:"adamant", item:"stone:metagrossMega", pts:_HA, moves:["meteormash","zenheadbutt","earthquake","bulletpunch"] },
+  metagross:   { nature:"jolly",   item:"stone:metagrossMega", pts:_AS, moves:["zenheadbutt","bulletpunch","earthquake","icepunch"] },
 };
 Object.entries(BUILD_OVERRIDES).forEach(([k, o]) => {
   const sp = SPECIES[k];
@@ -801,6 +807,7 @@ function makeMon(entry) {
     stages: {atk:0,def:0,spa:0,spd:0,spe:0}, choiceLock: null, disguiseBusted: false,
     status: null, sleepTurns: 0, flinched: false,
     encore: null, drowsy: 0, roosting: false, charging: null,
+    proteanUsed: false, locked: null, confusion: 0, justSwitched: false,
     moves: entry.moves.map((k) => ({ key: k, pp: MOVES[k].pp })),
   };
 }
@@ -1655,6 +1662,7 @@ function calcDamage(a, d, move, isCrit, side) {
   if (move.pixilated) dmg = Math.floor(dmg * 1.2);
   if (a.ability === "toughclaws" && move.contact) dmg = Math.floor(dmg * 1.3);
   if (a.ability === "technician" && move.power <= 60) dmg = Math.floor(dmg * 1.5);
+  if (move.knockOff && d.item !== "none" && !d.item.startsWith("stone:")) dmg = Math.floor(dmg * 1.5);
   if (a.ability === "reckless" && move.recoil) dmg = Math.floor(dmg * 1.2);
   if (a.ability === "sandforce" && battle.weather === "sand" && ["rock","ground","steel"].includes(move.type)) dmg = Math.floor(dmg * 1.3);
   if (hpLow(a)) {
@@ -1852,24 +1860,57 @@ async function canAct(m) {
     else { await say(`${m.name}は こおって うごけない！`); return false; }
   }
   if (m.status === "par" && battleRandom() < 1/8) { await say(`${m.name}は しびれて うごけない！`); return false; }
+  if (m.confusion > 0) {
+    m.confusion--;
+    if (m.confusion <= 0) { await say(`${m.name}の こんらんが とけた！`); }
+    else {
+      await say(`${m.name}は こんらんしている…`, { noWait: true });
+      if (battleRandom() < 1/3) {
+        // 自分を攻撃（威力40・タイプなし物理）
+        const self = { ...m, types: [] };
+        const dmg = Math.max(1, calcDamage(m, self, { type: "typeless", cat: "phys", power: 40 }, false, m === activeP() ? "player" : "enemy"));
+        m.hp = Math.max(0, m.hp - dmg);
+        const side = m === activeP() ? "player" : "enemy";
+        setHpBar(m, side);
+        await say(`わけも わからず じぶんを こうげきした！`);
+        if (m.locked) m.locked = null;
+        return false;
+      }
+    }
+  }
   return true;
 }
 
 /* ===== わざ実行 ===== */
-async function useMove(attacker, defender, moveSlot, attackerSide) {
-  if (!(await canAct(attacker))) return null;
+async function useMove(attacker, defender, moveSlot, attackerSide, foeAct) {
+  if (!(await canAct(attacker))) { attacker.locked = null; return null; }
   const move = effectiveMove(attacker, moveSlot.key);
+  const defenderSide = otherSide(attackerSide);
+
+  // ふいうち: 相手が攻撃技を使うときだけ成功（変化技・交代・行動済みなら失敗）
+  if (move.suckerCheck) {
+    const foeAttacks = foeAct && foeAct.kind === "fight" && foeAct.slot && MOVES[foeAct.slot.key].cat !== "status";
+    if (defender.actedThisTurn || !foeAttacks) {
+      moveSlot.pp--;
+      attacker.lastMoveKey = moveSlot.key;
+      await say(`${attacker.name}の ${move.name}！`, { noWait: true });
+      await say("しかし うまく きまらなかった！");
+      return null;
+    }
+  }
+
+  // げきりん等の連続攻撃: ロック中は同じ技を使う
+  if (attacker.locked) moveSlot = attacker.moves.find((s) => s.key === attacker.locked.moveKey) || moveSlot;
   moveSlot.pp--;
   if (["choiceband","choicespecs","choicescarf"].includes(attacker.item)) attacker.choiceLock = moveSlot.key;
   attacker.lastMoveKey = moveSlot.key;
   await say(`${attacker.name}の ${move.name}！`, { noWait: true });
 
-  if (attacker.ability === "protean" && move.cat !== "status" && !(attacker.types.length === 1 && attacker.types[0] === move.type)) {
+  if (attacker.ability === "protean" && !attacker.proteanUsed && move.cat !== "status" && !(attacker.types.length === 1 && attacker.types[0] === move.type)) {
     attacker.types = [move.type];
+    attacker.proteanUsed = true;
     await say(`${attacker.name}は ${TYPE_INFO[move.type].jp}タイプに なった！`, { noWait: true });
   }
-
-  const defenderSide = otherSide(attackerSide);
 
   // ためわざ（ソーラービーム/エレクトロビーム。対応天候なら即発射）
   if (move.charge) {
@@ -1925,6 +1966,7 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
       setHpBar(attacker, attackerSide);
       sfx.statup();
       await say(`${attacker.name}は たいりょくを けずって パワーぜんかい！\nこうげきが さいだいまで あがった！`);
+      await checkSitrus(attacker, attackerSide);   // はらだいこ後のオボンのみ発動
       return null;
     }
     // ここから相手対象 → マジックミラーで反射
@@ -1981,10 +2023,7 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
   const mult = typeMultiplier(move.type, defender);
   if (mult === 0) { await say(`${defender.name}には こうかが ないようだ…`); return null; }
 
-  const critChance = move.alwaysCrit ? 1 : (move.highCrit ? 1/8 : 1/24);
-  const isCrit = battleRandom() < critChance;
-  let dmg = calcDamage(attacker, defender, move, isCrit, attackerSide);
-
+  // ばけのかわ（最初の攻撃を1回だけ無効化）
   if (defender.ability === "disguise" && !defender.disguiseBusted) {
     defender.disguiseBusted = true;
     sfx.hit();
@@ -1998,16 +2037,28 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
     return null;
   }
 
-  let endured = null;
-  if (dmg >= defender.hp && defender.hp === defender.maxHp) {
-    if (defender.ability === "sturdy") { dmg = defender.hp - 1; endured = "sturdy"; }
-    else if (defender.item === "focussash" && !defender.itemUsed) { dmg = defender.hp - 1; defender.itemUsed = true; endured = "sash"; }
+  // 連続技対応: hits回ぶんダメージ判定
+  const hitCount = move.hits || 1;
+  let dmg = 0, anyCrit = false, endured = null, hitsLanded = 0;
+  for (let h = 0; h < hitCount; h++) {
+    if (defender.hp <= 0) break;
+    const critChance = move.alwaysCrit ? 1 : (move.highCrit ? 1/8 : 1/24);
+    const isCrit = battleRandom() < critChance;
+    if (isCrit) anyCrit = true;
+    let hitDmg = calcDamage(attacker, defender, move, isCrit, attackerSide);
+    if (hitDmg >= defender.hp && defender.hp === defender.maxHp) {
+      if (defender.ability === "sturdy") { hitDmg = defender.hp - 1; endured = "sturdy"; }
+      else if (defender.item === "focussash" && !defender.itemUsed) { hitDmg = defender.hp - 1; defender.itemUsed = true; endured = "sash"; }
+    }
+    await animateHit($(defenderSide + "-wrap"), mult);
+    defender.hp = Math.max(0, defender.hp - hitDmg);
+    dmg += hitDmg;
+    setHpBar(defender, defenderSide);
+    await wait(hitCount > 1 ? 260 : 500);
+    hitsLanded++;
   }
-
-  await animateHit($(defenderSide + "-wrap"), mult);
-  defender.hp = Math.max(0, defender.hp - dmg);
-  setHpBar(defender, defenderSide);
-  await wait(500);
+  const isCrit = anyCrit;
+  if (hitCount > 1) await say(`${hitsLanded}かい あたった！`, { noWait: true });
   if (isCrit) await say("きゅうしょに あたった！");
   if (mult > 1) await say("こうかは ばつぐんだ！");
   else if (mult < 1) await say("こうかは いまひとつの ようだ…");
@@ -2049,6 +2100,11 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
         await inflictStatus(attacker, attackerSide, "par", true);
       }
     }
+    // はたきおとす: 相手のもちものを たたきおとす
+    if (move.knockOff && defender.item !== "none" && !defender.item.startsWith("stone:") && defender.ability !== "goodasgold") {
+      await say(`${attacker.name}は ${defender.name}の ${itemLabel({key:defender.key,item:defender.item})}を たたきおとした！`);
+      defender.item = "none";
+    }
   }
   // 反動（倒しても発動）
   if (move.recoil && attacker.hp > 0) {
@@ -2079,6 +2135,21 @@ async function useMove(attacker, defender, moveSlot, attackerSide) {
   }
   await checkSitrus(attacker, attackerSide);
 
+  // げきりん等の連続攻撃ロック管理
+  if (move.rampage && attacker.hp > 0) {
+    if (koed) {
+      attacker.locked = null;   // 相手が倒れたら自然終了
+    } else if (!attacker.locked) {
+      attacker.locked = { moveKey: moveSlot.key, turns: 1 + Math.floor(battleRandom() * 2) };  // あと1〜2ターン
+    } else if (--attacker.locked.turns <= 0) {
+      attacker.locked = null;
+      if (!attacker.status && attacker.confusion <= 0) {
+        attacker.confusion = 2 + Math.floor(battleRandom() * 3);
+        await say(`${attacker.name}は つかれて こんらんした！`);
+      }
+    }
+  }
+
   const attackerFainted = attacker.hp <= 0;
   if (attackerFainted && !koed) { await faintOut(attacker, attackerSide); return "attacker"; }
   if (attackerFainted && koed) { await faintOut(attacker, attackerSide); return "both"; }
@@ -2107,6 +2178,8 @@ async function endOfTurn() {
     const m = monOf(side);
     if (!m || m.hp <= 0 || battle.over) continue;
     m.actedThisTurn = false;
+    // 瀕死交代で今ターン出てきたポケモンは天候・状態異常ダメージを受けない
+    if (m.justSwitched) { m.justSwitched = false; continue; }
     if (battle.weather === "sand" && !m.types.some((t) => ["rock","ground","steel"].includes(t))) {
       if (await chip(m, side, 1/16, `${m.name}は すなあらしで ダメージ！`)) continue;
     }
@@ -2129,6 +2202,9 @@ async function endOfTurn() {
     // アンコール経過
     if (m.encore && --m.encore.turns <= 0) { m.encore = null; await say(`${m.name}の アンコールが とけた！`, { noWait: true }); }
   }
+  // 生き残った両者の justSwitched は次ターンからダメージ対象に
+  battle.playerParty[battle.pIdx] && (battle.playerParty[battle.pIdx].justSwitched = false);
+  battle.enemyParty[battle.eIdx] && (battle.enemyParty[battle.eIdx].justSwitched = false);
   if (battle.terrain && !battle.over) {
     if (--battle.terrainTurns <= 0) {
       battle.terrain = null;
@@ -2145,6 +2221,33 @@ async function endOfTurn() {
       await say(msgs[was], { noWait: true });
     }
   }
+}
+
+/* ===== 確認ダイアログ ===== */
+function confirmDialog(text, yesLabel = "はい", noLabel = "いいえ") {
+  return new Promise((resolve) => {
+    const modal = $("party-modal");
+    modal.innerHTML = "";
+    modal.classList.remove("hidden");
+    const panel = document.createElement("div");
+    panel.id = "party-panel";
+    panel.addEventListener("click", (e) => e.stopPropagation());
+    panel.innerHTML = `<h3 style="white-space:pre-wrap;line-height:1.6">${text}</h3>`;
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;gap:12px;justify-content:center;margin-top:6px";
+    const yes = document.createElement("button");
+    yes.className = "primary-btn";
+    yes.textContent = yesLabel;
+    yes.addEventListener("click", (e) => { e.stopPropagation(); sfx.select(); modal.classList.add("hidden"); resolve(true); });
+    const no = document.createElement("button");
+    no.className = "primary-btn";
+    no.style.background = "#4a5aa0"; no.style.color = "#fff"; no.style.borderColor = "#8a97c8";
+    no.textContent = noLabel;
+    no.addEventListener("click", (e) => { e.stopPropagation(); sfx.unpick(); modal.classList.add("hidden"); resolve(false); });
+    row.appendChild(yes); row.appendChild(no);
+    panel.appendChild(row);
+    modal.appendChild(panel);
+  });
 }
 
 /* ===== ひんし・交代 ===== */
@@ -2178,7 +2281,7 @@ function showPartyModal(forced) {
     modal.appendChild(panel);
   });
 }
-function resetOnSwitch(m) { m.stages = {atk:0,def:0,spa:0,spd:0,spe:0}; m.choiceLock = null; m.types = [...m.baseTypes]; m.flinched = false; m.encore = null; m.drowsy = 0; m.roosting = false; m.charging = null; }
+function resetOnSwitch(m) { m.stages = {atk:0,def:0,spa:0,spd:0,spe:0}; m.choiceLock = null; m.types = [...m.baseTypes]; m.flinched = false; m.encore = null; m.drowsy = 0; m.roosting = false; m.charging = null; m.proteanUsed = false; m.locked = null; m.confusion = 0; m.justSwitched = false; }
 function enemyChooseNext() {
   const p = activeP();
   let best = -1, bs = -1;
@@ -2204,6 +2307,7 @@ async function handleFaint(side) {
       battle.eIdx = enemyChooseNext();
     }
     resetOnSwitch(activeE());
+    activeE().justSwitched = true;   // 瀕死交代はこのターンの終了ダメージを受けない
     await say(`あいては つぎに ${activeE().name}を くりだした！`);
     sfx.send();
     refreshSide("enemy");
@@ -2213,6 +2317,7 @@ async function handleFaint(side) {
     battle.pIdx = await showPartyModal(true);
     if (net.active) netSend("replace", battle.pIdx);
     resetOnSwitch(activeP());
+    activeP().justSwitched = true;
     await say(`いけっ！ ${activeP().name}！`, { noWait: true });
     refreshSide("player");
     await wait(550);
@@ -2291,11 +2396,12 @@ function showMoveMenu(m, side) {
   });
 }
 async function playerCommand() {
-  // ためわざ中は自動で発射
-  if (activeP().charging) {
-    const slot = activeP().moves.find((s) => s.key === activeP().charging);
+  // ためわざ中・げきりんロック中は自動で発射
+  const forced = activeP().charging || (activeP().locked && activeP().locked.moveKey);
+  if (forced) {
+    const slot = activeP().moves.find((s) => s.key === forced);
     if (slot) return { kind: "fight", slot, mega: false };
-    activeP().charging = null;
+    activeP().charging = null; activeP().locked = null;
   }
   while (true) {
     $("msg-text").textContent = `${activeP().name}は どうする？`;
@@ -2318,12 +2424,17 @@ async function playerCommand() {
       if (activeP().hp >= activeP().maxHp) { await say("HPは まんたんだ！"); continue; }
       return { kind: "item" };
     }
-    if (cmd === "run") return { kind: "run" };
+    if (cmd === "run") {
+      const ok = await confirmDialog("ほんとうに こうさんする？", "こうさんする", "やめる");
+      if (!ok) continue;
+      return { kind: "run" };
+    }
   }
 }
 function enemyChooseMove() {
   const e = activeE(), p = activeP();
   if (e.charging) { const s = e.moves.find((m) => m.key === e.charging); if (s) return s; e.charging = null; }
+  if (e.locked) { const s = e.moves.find((m) => m.key === e.locked.moveKey); if (s) return s; e.locked = null; }
   let usable = e.moves.filter((m) => m.pp > 0);
   if (e.choiceLock) usable = usable.filter((m) => m.key === e.choiceLock);
   if (e.encore) usable = usable.filter((m) => m.key === e.encore.moveKey);
@@ -2364,11 +2475,52 @@ function deserializeAct(d, mon) {
   if (d.moveKey) a.slot = mon.moves.find((s) => s.key === d.moveKey);
   return a;
 }
+// 敵の交代判断: 4倍弱点を突かれそう or 有効打が無い場合、相性のいい控えに交代
+function enemyDecideSwitch() {
+  const e = activeE(), p = activeP();
+  if (e.locked || e.charging) return -1;   // げきりん・ため中は交代できない
+  const bench = battle.enemyParty.map((m, i) => ({ m, i })).filter(({ m, i }) => m.hp > 0 && i !== battle.eIdx);
+  if (!bench.length) return -1;
+  // プレイヤーが持つ最大倍率（4倍弱点判定）
+  const foeBest = Math.max(...p.moves.map((sl) => {
+    const mv = effectiveMove(p, sl.key);
+    return mv.cat === "status" ? 0 : typeMultiplier(mv.type, e);
+  }));
+  // 自分の有効打の最大倍率
+  const myBest = Math.max(...e.moves.map((sl) => {
+    const mv = effectiveMove(e, sl.key);
+    return mv.cat === "status" ? 0 : typeMultiplier(mv.type, p);
+  }));
+  const inDanger = foeBest >= 4;             // 4倍弱点を突かれそう
+  const walled = myBest < 1;                 // 全技が いまひとつ/無効
+  if (!inDanger && !walled) return -1;
+  // 控えから「相手に強く、自分は弱点を突かれにくい」ものを選ぶ
+  let best = -1, bestScore = -Infinity;
+  bench.forEach(({ m, i }) => {
+    const off = Math.max(...m.moves.map((sl) => {
+      const mv = effectiveMove(m, sl.key);
+      return mv.cat === "status" ? 0 : mv.power * (m.types.includes(mv.type) ? 1.5 : 1) * typeMultiplier(mv.type, p);
+    }));
+    const risk = Math.max(...p.moves.map((sl) => {
+      const mv = effectiveMove(p, sl.key);
+      return mv.cat === "status" ? 0 : typeMultiplier(mv.type, m);
+    }));
+    const score = off / 40 - risk * 30;      // 攻撃力を評価しつつ弱点は大きく減点
+    if (score > bestScore) { bestScore = score; best = i; }
+  });
+  // 交代先が今より安全なときだけ（かつ7割の確率で）交代
+  if (best < 0) return -1;
+  const targetRisk = Math.max(...p.moves.map((sl) => { const mv = effectiveMove(p, sl.key); return mv.cat === "status" ? 0 : typeMultiplier(mv.type, battle.enemyParty[best]); }));
+  if (targetRisk >= foeBest) return -1;      // 交代してもリスクが減らないならしない
+  return Math.random() < .7 ? best : -1;
+}
 async function collectFoeAction() {
   if (net.active) {
     $("msg-text").textContent = "あいての こうどうを まってるよ…";
     return deserializeAct(await netWait("action"), activeE());
   }
+  const sw = enemyDecideSwitch();
+  if (sw >= 0) return { kind: "switch", idx: sw };
   const em = enemyChooseMove();
   if (!em) return { kind: "pass" };
   return { kind: "fight", slot: em, mega: megaEligible(activeE(), "enemy") };
@@ -2432,7 +2584,7 @@ async function battleTurn() {
   for (const side of order) {
     const atk = monOf(side), def = monOf(otherSide(side));
     if (atk.hp <= 0) continue;
-    const result = await useMove(atk, def, acts[side].slot, side);
+    const result = await useMove(atk, def, acts[side].slot, side, acts[otherSide(side)]);
     atk.actedThisTurn = true;
     if (await applyResult(result, side)) break;
     if (battle.over) return;
@@ -2523,8 +2675,21 @@ $("net-btn").addEventListener("click", (e) => {
 });
 $("net-host").addEventListener("click", (e) => { e.stopPropagation(); sfx.pick(); netHost(); });
 $("net-join").addEventListener("click", (e) => { e.stopPropagation(); sfx.pick(); netJoin(); });
-$("net-back").addEventListener("click", (e) => { e.stopPropagation(); sfx.unpick(); netReset(); showScene("team-scene"); });
-const GAME_VER = "v14";
+$("net-back").addEventListener("click", (e) => {
+  e.stopPropagation(); sfx.unpick(); netReset();
+  game.netPending = false;
+  $("team-go").textContent = "バトルへ ▶";
+  showScene("team-scene");
+});
+// バトル中にタイトルへ戻る（確認つき）
+$("battle-title-btn").addEventListener("click", async (e) => {
+  e.stopPropagation();
+  const ok = await confirmDialog("バトルを やめて\nタイトルに もどる？", "もどる", "つづける");
+  if (!ok) return;
+  netReset();
+  location.reload();   // クリーンにタイトルへ（チーム・育成はセーブ済み）
+});
+const GAME_VER = "v15";
 loadBuilds();
 loadTeams();
 buildTitleParade();
