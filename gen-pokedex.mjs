@@ -5,7 +5,7 @@ import { writeFileSync, readFileSync, existsSync, statSync } from "fs";
 import { execSync } from "child_process";
 
 // ゲーム本体から MOVES 辞書を抽出（カテゴリ・威力・タイプを参照）
-const html = readFileSync("pokemon-battle.html", "utf8");
+const html = readFileSync("index.html", "utf8");
 const movesSrc = html.match(/const MOVES = \{[\s\S]*?\n\};/)[0];
 const MOVES = new Function(movesSrc + "; return MOVES;")();
 const gameMoveSet = new Set(Object.keys(MOVES));
@@ -49,6 +49,11 @@ const ABILITY_MAP = {
   "good-as-gold": "goodasgold", "disguise": "disguise", "blaze": "blaze", "torrent": "torrent",
   "overgrow": "overgrow", "solar-power": "solarpower", "cursed-body": "cursedbody",
   "shadow-tag": "shadowtag", "electric-surge": "electricsurge", "unseen-fist": "unseenfist",
+  "thick-fat": "thickfat", "unburden": "unburden", "poison-touch": "poisontouch",
+  "pressure": "pressure", "poison-heal": "poisonheal", "flame-body": "flamebody",
+  "swarm": "swarm", "purifying-salt": "purifyingsalt", "mold-breaker": "moldbreaker",
+  "levitate": "levitate", "bulletproof": "bulletproof", "technician": "technician",
+  "libero": "protean",   // リベロ=へんげんじざいと同等
 };
 
 // フォルム違いの表示名（種名だけだと区別できないもの）
@@ -92,15 +97,17 @@ for (const [api, img] of TARGETS) {
       const mv = MOVES[m];
       const stab = types.includes(mv.type) ? 1.5 : 1;
       const catFit = (mv.cat === "phys") === physical ? 1 : 0.4;
-      return (mv.power || 0) * stab * catFit;
+      const base = mv.multi ? mv.power * 3 : (mv.power || (mv.gyro || mv.counter ? 60 : 0));
+      return base * stab * catFit;
     };
     attacks.sort((a, b) => score(b) - score(a));
-    const STATUS_PRIORITY = ["dragondance","quiverdance","swordsdance","nastyplot","bellydrum","calmmind","bulkup","irondefense","recover","slackoff","roost","stealthrock","willowisp","thunderwave","raindance","sunnyday","yawn","encore","roar","sandstormmove"];
+    const STATUS_PRIORITY = ["dragondance","quiverdance","swordsdance","nastyplot","bellydrum","calmmind","bulkup","irondefense","cottonguard","recover","slackoff","roost","morningsun","synthesis","moonlight","protect","substitute","leechseed","toxic","spore","willowisp","thunderwave","stealthrock","spikes","toxicspikes","reflect","lightscreen","auroraveil","trickroom","encore","yawn","charm","eerieimpulse","curse","perishsong","whirlwind","roar","raindance","sunnyday","snowscape","sandstormmove"];
     const pri = (m) => { const i = STATUS_PRIORITY.indexOf(m); return i < 0 ? 99 : i; };
     const statusMoves = pool.filter((m) => MOVES[m].cat === "status").sort((a, b) => pri(a) - pri(b));
-    let trimmed = attacks.slice(0, 10).concat(statusMoves.slice(0, 4));
-    // とんぼがえり/ボルトチェンジは定番なので必ず入れる
-    ["uturn","voltswitch"].forEach((pv) => { if (pool.includes(pv) && !trimmed.includes(pv)) trimmed.push(pv); });
+    let trimmed = attacks.slice(0, 12).concat(statusMoves.slice(0, 8));
+    // とんぼがえり系＋看板わざは覚えるなら必ず入れる
+    ["uturn","voltswitch","flipturn","saltcure","ragefist","magmastorm","spore","tripleaxel","upperhand","counter","mirrorcoat"]
+      .forEach((pv) => { if (pool.includes(pv) && !trimmed.includes(pv)) trimmed.push(pv); });
     // 配分: 攻/特攻/素早さ型はS振り、HP/防/特防型はHP振り
     const offScore = Math.max(atk, spa) + spe;
     const bulkScore = hp + (def + spd) / 2;
